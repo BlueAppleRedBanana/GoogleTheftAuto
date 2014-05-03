@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Google Earth API -->
+  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <script>
+    google.load('earth','1',{'other_params':"sensor={true}"});
+  </script>
+  <script>
+    function init() {
+      google.earth.createInstance("map3d",initCB, failureCB);
+    // div, success, failure
+  }
+
+  function initCB(instance) {
+    ge = instance;
+    ge.getWindow().setVisibility(true);
+    setLocation(ge);
+  }
+
+  function setLocation(ge) {
+    var lookAt = ge.createLookAt('');
+    lookAt.setLatitude(41.26);
+    lookAt.setLongitude(-100.00);
+    lookAt.setRange(800000.0);
+    ge.getView().setAbstractView(lookAt);
+  }
+
+  function failureCB(errorCode) {
+
+  }
+
+  google.setOnLoadCallback(init);
+</script>
+</head>
+<body>
+  <div id="map3d" style="max-height: 100%; width: 100%;"></div>
+</body>
+</html>
