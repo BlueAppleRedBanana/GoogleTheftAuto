@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <!-- // <script type="text/javascript" src="common.js"></script> -->
+  <script type="text/javascript" src="config.js"></script>
+</head>
+<body>
+  <div id="map3d" style="max-height: 100%; width: 100%;"></div>
   <!-- Google Earth API -->
   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
   <script>
@@ -9,54 +14,41 @@
   <script>
     function init() {
       google.earth.createInstance("map3d",initCB, failureCB);
-    // div, success, failure
-  }
-
-  function initCB(instance) {
-    ge = instance;
-    ge.getWindow().setVisibility(true);
-    setLocation(ge);
-  }
-
-  function setLocation(ge) {
-    var lookAt = ge.createLookAt('');
-    lookAt.setLatitude(40.7127);
-    lookAt.setLongitude(-74.0059);
-    lookAt.setRange(100.0);
-    lookAt.setTilt(45);
-    ge.getView().setAbstractView(lookAt);
-    ge.getLayerRoot().enableLayerById(ge.LAYER_BUILDINGS, true);
-    var placemark = ge.createPlacemark('');
-    placemark.setName('model');
-    var model = ge.createModel('');
-    ge.getFeatures().appendChild(placemark);
-    var loc = ge.createLocation('');
-    model.setLocation(loc);
-    var link = ge.createLink('');
-
-    link.setHref('http://edwardrockhands.com/GoogleTheftAuto/models/collada/multimaterial.dae');
-    model.setLink(link);
-
-    loc.setLatitude(lookAt.getLatitude());
-    loc.setLongitude(lookAt.getLongitude());
-
-    placemark.setGeometry(model);
-    console.log(link);
-    console.log(model);
-
-    console.log(lookAt.getLatitude());
-    console.log(lookAt.getLongitude());
-
-  }
-
-  function failureCB(errorCode) {
-
-  }
-
-  google.setOnLoadCallback(init);
-</script>
-</head>
-<body>
-  <div id="map3d" style="max-height: 100%; width: 100%;"></div>
+      // div, success, failure
+    }
+    function initCB(instance) {
+      ge = instance;
+      ge.getWindow().setVisibility(true);
+      setLocation(ge);
+    }
+    function setLocation(ge) {
+      var lookAt = ge.createLookAt('');
+      lookAt.setLatitude(latitude);
+      lookAt.setLongitude(longitude);
+      lookAt.setRange(100.0);
+      lookAt.setTilt(45);
+      ge.getView().setAbstractView(lookAt);
+      ge.getLayerRoot().enableLayerById(ge.LAYER_BUILDINGS, true);
+      var placemark = ge.createPlacemark('');
+      placemark.setName('model');
+      var model = ge.createModel('');
+      ge.getFeatures().appendChild(placemark);
+      var loc = ge.createLocation('');
+      model.setLocation(loc);
+      var link = ge.createLink('');
+      link.setHref('http://edwardrockhands.com/GoogleTheftAuto/models/collada/multimaterial.dae');
+      model.setLink(link);
+      loc.setLatitude(lookAt.getLatitude());
+      loc.setLongitude(lookAt.getLongitude());
+      placemark.setGeometry(model);
+      console.log(link);
+      console.log(model);
+      console.log(lookAt.getLatitude());
+      console.log(lookAt.getLongitude());
+    }
+    function failureCB(errorCode) {
+    }
+    google.setOnLoadCallback(init);
+  </script>
 </body>
 </html>

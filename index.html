@@ -6,7 +6,11 @@
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 <script src="lib/jquery-1.11.1.min.js"></script>
 <script src="lib/three.min.js"></script>
+<script src="threejs/loaders/ObjectLoader.js"></script>
 <script src="lib/AssimpJSONLoader.js"></script>
+<script src="lib/JSONLoader.js"></script>
+<script src="config.js"></script>
+<script src="lib/osm2geo.js"></script>
 <script>
 	$(document).ready(function(){
 		var container;
@@ -41,14 +45,12 @@
 		*/
 		});
 
-
 		function init() {
-
 			container = document.createElement( 'div' );
 			document.body.appendChild( container );
 
 			camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 2000 );
-			camera.position.set( 0, 10, 10 );
+			camera.position.set( 0, longitude, latitude );
 
 			scene = new THREE.Scene();
 
@@ -96,35 +98,52 @@
 			scene.add( mesh );
 			console.log(mesh);
 */
+			// loadJSON("map.js");
+			var manager = new THREE.LoadingManager();
+			manager.onProgress = function ( item, loaded, total ) {
+				console.log( item, loaded, total );
+			};
+
+			var loader = new THREE.ObjectLoader(manager);
+			loader.load( "map.obj", function (object) {
+				object.traverse(function (child) {
+					scene.add(object);
+				})
+			});
+			//loadJSON("map2.js");
+			//geo3 = osm2geo("map3.osm");
+
+
 		}
 
-		//
+		function loadJSON(file) {
+			var loader = new THREE.JSONLoader();
+        	loader.load( file, modelToScene );
+		}
+
+		function modelToScene( geometry, materials ) {
+            var material = new THREE.MeshFaceMaterial( materials );
+            obj = new THREE.Mesh( geometry, material );
+            obj.scale.set(1,1,1);
+            console.log( obj );
+            scene.add( obj );
+        }
 
 		function onWindowResize( event ) {
-
 			renderer.setSize( window.innerWidth, window.innerHeight );
-
 			camera.aspect = window.innerWidth / window.innerHeight;
 			camera.updateProjectionMatrix();
-
 		}
-
-		//
 
 		var t = 0;
 		function animate() {
-
 			requestAnimationFrame( animate );
-
 			render();
 		}
 
 		//
-
 		function render() {
-
 			var timer = Date.now() * 0.0005;
-
 //			console.log(car);
 //				camera.position.x = Math.cos( timer ) * 10;
 //				camera.position.y = 4;
