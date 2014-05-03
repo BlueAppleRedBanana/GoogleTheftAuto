@@ -20,10 +20,33 @@
 
   function setLocation(ge) {
     var lookAt = ge.createLookAt('');
-    lookAt.setLatitude(41.26);
-    lookAt.setLongitude(-100.00);
-    lookAt.setRange(800000.0);
+    lookAt.setLatitude(40.7127);
+    lookAt.setLongitude(-74.0059);
+    lookAt.setRange(100.0);
+    lookAt.setTilt(45);
     ge.getView().setAbstractView(lookAt);
+
+    var placemark = ge.createPlacemark('');
+    placemark.setName('model');
+    var model = ge.createModel('');
+    ge.getFeatures().appendChild(placemark);
+    var loc = ge.createLocation('');
+    model.setLocation(loc);
+    var link = ge.createLink('');
+
+    link.setHref('models/collada/multimaterial.dae');
+    model.setLink(link);
+
+    loc.setLatitude(lookAt.getLatitude());
+    loc.setLongitude(lookAt.getLongitude());
+
+    placemark.setGeometry(model);
+    console.log(link);
+    console.log(model);
+
+    console.log(lookAt.getLatitude());
+    console.log(lookAt.getLongitude());
+
   }
 
   function failureCB(errorCode) {
