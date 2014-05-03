@@ -25,7 +25,7 @@
     lookAt.setRange(100.0);
     lookAt.setTilt(45);
     ge.getView().setAbstractView(lookAt);
-
+    ge.getLayerRoot().enableLayerById(ge.LAYER_BUILDINGS, true);
     var placemark = ge.createPlacemark('');
     placemark.setName('model');
     var model = ge.createModel('');
@@ -34,7 +34,7 @@
     model.setLocation(loc);
     var link = ge.createLink('');
 
-    link.setHref('models/collada/multimaterial.dae');
+    link.setHref('http://edwardrockhands.com/GoogleTheftAuto/models/collada/multimaterial.dae');
     model.setLink(link);
 
     loc.setLatitude(lookAt.getLatitude());
@@ -52,6 +52,7 @@
   function failureCB(errorCode) {
 
   }
+
   google.setOnLoadCallback(init);
 </script>
 </head>
