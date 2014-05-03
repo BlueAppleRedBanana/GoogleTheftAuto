@@ -160,7 +160,7 @@
 
     ge.getView().setAbstractView(ca);
 
-    $("#speed").html(car.speed);
+    $("#speed").html(parseInt(Math.abs(car.speed))+" MPH");
   }
 
   function failureCB(errorCode) {
