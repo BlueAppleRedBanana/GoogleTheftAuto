@@ -1,12 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<title>Google Thief Auto</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 <script src="lib/jquery-1.11.1.min.js"></script>
 <script src="lib/three.min.js"></script>
+<script src="lib/AssimpJSONLoader.js"></script>
 <script>
 	$(document).ready(function(){
-		console.log("document ready");
-		
+		var container;
+		var camera, scene, renderer, objects;
+		var clock = new THREE.Clock();
+		var car;
+		init();
+
+		var loader1 = new THREE.AssimpJSONLoader();
+		loader1.load( 'models/assimp/jeep/jeep1.ms3d.json', function ( assimpjson ) {
+			car = assimpjson;
+			assimpjson.scale.x = assimpjson.scale.y = assimpjson.scale.z = 0.2;
+			assimpjson.updateMatrix();
+			scene.add(assimpjson);
+			console.log(car);
+			car.velocity = 0;
+			$(document).keydown(function(e){
+				console.log(e.keyCode);
+				if(e.keyCode == "65"){
+					car.rotation.y += .2; 
+				}else if(e.keyCode == "68"){
+					car.rotation.y -= .2; 
+				}else if(e.keyCode == "87"){
+					car.velocity -= .1;
+				}else if(e.keyCode == "83"){
+					car.velocity += .1;
+				}
+			});
+		});
+
+		animate();
+
+		function init() {
+
+			container = document.createElement( 'div' );
+			document.body.appendChild( container );
+
+			camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 2000 );
+			camera.position.set( 0, 50, 50 );
+
+			scene = new THREE.Scene();
+
+			scene.add( new THREE.AmbientLight( 0xcccccc ) );
+
+			var directionalLight = new THREE.DirectionalLight(/*Math.random() * 0xffffff*/0xeeeeee );
+			directionalLight.position.x = Math.random() - 0.5;
+			directionalLight.position.y = Math.random() - 0.5;
+			directionalLight.position.z = Math.random() - 0.5;
+			directionalLight.position.normalize();
+			scene.add( directionalLight );
+
+			renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+			container.appendChild( renderer.domElement );
+
+			window.addEventListener( 'resize', onWindowResize, false );
+
+		}
+
+		//
+
+		function onWindowResize( event ) {
+
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+		}
+
+		//
+
+		var t = 0;
+		function animate() {
+
+			requestAnimationFrame( animate );
+
+			render();
+		}
+
+		//
+
+		function render() {
+
+			var timer = Date.now() * 0.0005;
+
+//			console.log(car);
+//				camera.position.x = Math.cos( timer ) * 10;
+//				camera.position.y = 4;
+//				camera.position.z = Math.sin( timer ) * 10;
+
+			car.position.x += car.velocity*Math.sin(car.rotation.y);
+			car.position.z += car.velocity*Math.cos(car.rotation.y);
+
+			camera.position.x = car.position.x-car.velocity*Math.sin(car.rotation.y);
+			camera.position.z = car.position.z-car.velocity*Math.cos(car.rotation.y);
+			camera.position.y = 5;
+
+			camera.lookAt(car.position);
+
+			renderer.render( scene, camera );
+
+		}
 	});
 </script>
 </head>
