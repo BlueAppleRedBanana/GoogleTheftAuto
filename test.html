@@ -11,10 +11,12 @@
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBejUHJM-3LHGni-gM0ZNwzEpuq5e5epus&sensor=false">
 </script>
 <script type="text/javascript">
+latitude = 66;
+longitude = 66;
   function initialize() {
     var mapOptions = {
-      center: new google.maps.LatLng(55, 55),
-      zoom: 8
+      center: new google.maps.LatLng(latitude, longitude),
+      zoom: 9
     };
     var map = new google.maps.Map(document.getElementById("map-canvas"),
       mapOptions);
@@ -41,9 +43,9 @@
 
   function setLocation(ge) {
     var lookAt = ge.createLookAt('');
-    lookAt.setLatitude(55);
-    lookAt.setLongitude(55);
-    lookAt.setRange(800000.0);
+    lookAt.setLatitude(latitude);
+    lookAt.setLongitude(longitude);
+    lookAt.setRange(80000.0);
     ge.getView().setAbstractView(lookAt);
   }
 
@@ -54,7 +56,8 @@
 </script>
 </head>
 <body>
-  <div id="map-canvas" style="max-width:100%; height:350px"></div>
-  <div id="map3d" style="display:inline-block; width: 100%; height:350px;">hello</div>
+  <div id="map-canvas" style="max-width:100%; width: 350px; height:350px"></div>
+  <div id="map3d" style="display:inline-block; width: 350px; height:350px;">hello</div>
+  <div id="osm-canvas" style="max-width:100%; width: 350px; height:350px"></div>
 </body>
 </html>
