@@ -3,50 +3,153 @@
 <head>
   <!-- Google Earth API -->
   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <script type="text/javascript" src="lib/jquery-1.11.1.min.js"></script>
+  <script type="text/javascript" src="car.js"></script>
   <script>
     google.load('earth','1',{'other_params':"sensor={true}"});
   </script>
   <script>
-    function init() {
-      google.earth.createInstance("map3d",initCB, failureCB);
+  var ge;
+  var camera;
+  var loc;
+  var leftkey = false,
+      rightkey = false,
+      upkey = false,
+      downkey = false;
+  var car;
+  var model;
+  var direction = 5.6240;
+
+  function init() {
+    google.earth.createInstance("map3d",initCB, failureCB);
     // div, success, failure
   }
 
   function initCB(instance) {
     ge = instance;
     ge.getWindow().setVisibility(true);
+    ge.getOptions().setStatusBarVisibility(false);
+    ge.getNavigationControl().setVisibility(ge.VISIBILITY_HIDE);
+    ge.getOptions().setFlyToSpeed(ge.SPEED_TELEPORT);
+    ge.getLayerRoot().enableLayerById(ge.LAYER_BUILDINGS, 1);
+    ge.getLayerRoot().enableLayerById(ge.LAYER_TREES, 1); 
+    ge.getOptions().setMouseNavigationEnabled(0);
     setLocation(ge);
   }
 
   function setLocation(ge) {
-    var lookAt = ge.createLookAt('');
-    lookAt.setLatitude(40.7127);
-    lookAt.setLongitude(-74.0059);
-    lookAt.setRange(100.0);
-    lookAt.setTilt(45);
-    ge.getView().setAbstractView(lookAt);
-    ge.getLayerRoot().enableLayerById(ge.LAYER_BUILDINGS, true);
+    google.earth.addEventListener(ge, "frameend", handleFrame);
+
+
+    car = new Car(40.7311, -73.9887, direction);
+
+
     var placemark = ge.createPlacemark('');
     placemark.setName('model');
-    var model = ge.createModel('');
+    model = ge.createModel('');
     ge.getFeatures().appendChild(placemark);
-    var loc = ge.createLocation('');
+    loc = ge.createLocation('');
     model.setLocation(loc);
     var link = ge.createLink('');
 
-    link.setHref('http://edwardrockhands.com/GoogleTheftAuto/models/collada/multimaterial.dae');
-    model.setLink(link);
+    link.setHref('http://www.edwardrockhands.com/GoogleTheftAuto/models/'+
+      'splotchy_box.dae');
 
-    loc.setLatitude(lookAt.getLatitude());
-    loc.setLongitude(lookAt.getLongitude());
+    model.setLink(link);
+    var scale = model.getScale();
+    var n= .1;
+    scale.setX(n);
+    scale.setY(n);
+    scale.setZ(n);
+    var la = ge.getView().copyAsLookAt(ge.ALTITUDE_RELATIVE_TO_GROUND);
+    loc.setLatitude(car.latitude);
+    loc.setLongitude(car.longitude);
 
     placemark.setGeometry(model);
-    console.log(link);
-    console.log(model);
 
-    console.log(lookAt.getLatitude());
-    console.log(lookAt.getLongitude());
+//    la.setRange(300);
+//    la.setTilt(45);
+    ge.getView().setAbstractView(la);
 
+
+    $(document).keydown(function(e){
+      if(e.keyCode == 65 || e.keyCode == 37){
+        leftkey = true;
+      }else if(e.keyCode == 68 || e.keyCode == 39){
+        rightkey = true;
+
+      }else if(e.keyCode == 87 || e.keyCode == 38){
+        upkey = true;
+        
+      }else if(e.keyCode == 83 || e.keyCode == 40){
+        downkey = true;        
+      }
+      return false;
+    });
+
+
+
+    $(document).keyup(function(e){
+      if(e.keyCode == 65 || e.keyCode == 37){
+        leftkey = false;
+      }else if(e.keyCode == 68 || e.keyCode == 39){
+        rightkey = false;
+      }else if(e.keyCode == 87 || e.keyCode == 38){
+        upkey = false;
+      }else if(e.keyCode == 83 || e.keyCode == 40){
+        downkey = false;        
+      }
+      return false;
+    });
+  }
+
+  function handleFrame(){
+    
+
+    if(leftkey){
+      if(car.steering<1){ car.steering += 0.01; }
+    }else if(rightkey){
+      if(car.steering>-1){  car.steering -= 0.01; }
+    }else{
+      car.steering *= 0.1;
+    }
+
+    if(downkey){
+      car.power = 1;
+    }else if(upkey){
+      car.power = -1;
+    }else{
+      car.power = 0;
+    }
+
+    if(car.speed + car.power < car.speedLimit){
+      car.speed += car.power;
+    }
+
+    car.speed *=0.99;
+
+    car.direction += car.steering;
+    car.latitude += car.speed * -Math.cos(car.direction) * 0.000001;
+    car.longitude += car.speed * Math.sin(car.direction) * 0.000001;
+    
+    loc.setLatitude(car.latitude);
+    loc.setLongitude(car.longitude);
+
+//    console.log(car.latitude, car.longitude, car.direction);
+
+    var orientation = model.getOrientation();
+    orientation.setHeading(360-car.direction/Math.PI*180%360);
+    model.setOrientation(orientation);
+
+    var ca = ge.createCamera('');
+    
+    ca.setLatitude(car.latitude - 0.001*Math.cos(car.direction));
+    ca.setLongitude(car.longitude + 0.001*Math.sin(car.direction));
+    ca.setTilt(85);
+    ca.setAltitude(20);
+    ca.setHeading(360 - car.direction/Math.PI*180%360);
+
+    ge.getView().setAbstractView(ca);
   }
 
   function failureCB(errorCode) {
