@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!-- // <script type="text/javascript" src="common.js"></script> -->
-  <script type="text/javascript" src="config.js"></script>
-</head>
-<body>
-  <div id="map3d" style="max-height: 100%; width: 100%;"></div>
   <!-- Google Earth API -->
   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
   <script type="text/javascript" src="lib/jquery-1.11.1.min.js"></script>
@@ -13,8 +8,16 @@
   <script>
     google.load('earth','1',{'other_params':"sensor={true}"});
   </script>
+  <style>
+  div#speed{
+    position: fixed;
+    right:20px;
+    bottom:20px;
+    z-index:10000;
+    background: white;
+  }
+  </style>
   <script>
-<<<<<<< HEAD
   var ge;
   var camera;
   var loc;
@@ -148,7 +151,7 @@
     model.setOrientation(orientation);
 
     var ca = ge.createCamera('');
-    
+
     ca.setLatitude(car.latitude - 0.001*Math.cos(car.direction));
     ca.setLongitude(car.longitude + 0.001*Math.sin(car.direction));
     ca.setTilt(85);
@@ -156,6 +159,8 @@
     ca.setHeading(360 - car.direction/Math.PI*180%360);
 
     ge.getView().setAbstractView(ca);
+
+    $("#speed").html(car.speed);
   }
 
   function failureCB(errorCode) {
@@ -166,6 +171,7 @@
 </script>
 </head>
 <body>
+  <div id="speed"></div>
   <div id="map3d" style="max-height: 100%; width: 100%;"></div>
 </body>
 </html>
