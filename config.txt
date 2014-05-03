@@ -1,3 +1,8 @@
-Google Maps Javascript API v3 Key : AIzaSyBejUHJM-3LHGni-gM0ZNwzEpuq5e5epus
-Server Url : edwardrockhands.com
+{ 
+"Google Maps Javascript API v3 Key" : AIzaSyBejUHJM-3LHGni-gM0ZNwzEpuq5e5epus,
+"Server Url" : edwardrockhands.com,
+"id": u71169599,
+"pw": qwer1234,
+"git hub link":https://github.com/BlueAppleRedBanana/GoogleTheftAuto.git
 
+}
