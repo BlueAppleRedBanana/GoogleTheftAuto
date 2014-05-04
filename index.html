@@ -8,6 +8,7 @@
 <script src="lib/three.min.js"></script>
 <script src="lib/osm2geo.js"></script>
 <script src="map.js"></script>
+<script src="collision.js"></script>
 <script>
     var waitingAjax = false;
     var BBOX_SIZE = 0.001;
@@ -80,8 +81,6 @@
                 return false;
             });
 
-
-
             $(document).keyup(function(e){
                 console.log(e.keyCode);
                 if(e.keyCode == 82){
@@ -107,12 +106,11 @@
                 }
                 return false;
             });
-          
 
+            animate();
         }
 
         function onWindowResize() {
-
             windowHalfX = window.innerWidth / 2;
             windowHalfY = window.innerHeight / 2;
 
@@ -120,18 +118,47 @@
             camera.updateProjectionMatrix();
 
             renderer.setSize( window.innerWidth, window.innerHeight );
-
         }
-
-
     });
-        function animate() {
-            render();
-            requestAnimationFrame( animate );
-        }
 
-        function render() {
-            if(!stop){
+    function animate() {
+        render();
+        collisions = detectCollision();
+        var buildings = currentMap.buildings;
+        $.each(buildings, function(index, object) {
+        	object.material.color.setHex(0xE6E1B5);
+        })
+        $.each(collisions, function(index, object) {
+        	object.material.color.setHex(0xD6D1A5);
+        })
+        requestAnimationFrame( animate );
+    }
+
+    function updateCarVertices() {
+    	// TODO
+    }
+    
+    function render() {
+        if(!stop){
+            if(leftkey){
+              if(car.steering<0.05){ car.steering += 0.002; }
+            }else if(rightkey){
+              if(car.steering>-0.05){  car.steering -= 0.002; }
+            }else{
+              car.steering *= 0.1;
+            }
+
+            if(upkey){
+              car.power = .00004;
+            }else if(downkey){
+              car.power = -.00004;
+            }else{
+              car.power = 0;
+            }
+
+            if(car.speed + car.power){
+              car.speed += car.power;
+            }
 
                 if(leftkey){
                   if(car.steering<0.05){ car.steering += 0.0004; }
@@ -141,67 +168,52 @@
                   car.steering *= 0.1;
                 }
 
-                if(upkey){
-                  car.power = .00004;
-                }else if(downkey){
-                  car.power = -.00004;
-                }else{
-                  car.power = 0;
-                }
+            car.direction += car.steering;
 
-                if(car.speed + car.power){
-                  car.speed += car.power;
-                }
+            car.position.x += car.speed * -Math.cos(car.direction) * 0.001;
+            car.position.z += car.speed * Math.sin(car.direction) * 0.001;
+            car.speed *=0.992;
 
-                car.speed *=0.992;
+            car.rotation.y = car.direction;
+            camera.position.x = car.position.x;
+            camera.position.y = 0.002+Math.pow(car.speed,2)*5;
+            camera.position.z = car.position.z;
+            camera.lookAt(car.position);
 
-                car.direction += car.steering;
+            car.rotation.y = car.direction;
+            camera.position.x = car.position.x;
+            camera.position.y = 0.001+Math.pow(car.speed,2)*50;
+            camera.position.z = car.position.z;
+            camera.lookAt(car.position);
+            if(car.position.z > currentMap.bbox.west-THRESHOLD && typeof maps[currentMap.longitude+BBOX_SIZE][currentMap.latitude] == "undefined"){
+                var map = new Map(currentMap.longitude+BBOX_SIZE, currentMap.latitude);
+                maps[currentMap.longitude+BBOX_SIZE][currentMap.latitude] = map;
+                eachMap.push(map);
+            }
 
-                car.position.x += car.speed * -Math.cos(car.direction) * 0.001;
-                car.position.z += car.speed * Math.sin(car.direction) * 0.001;
+            if(typeof maps[currentMap.longitude-BBOX_SIZE] == "undefined"){
+                    maps[currentMap.longitude-BBOX_SIZE]=[];
+            }
 
-                car.rotation.y = car.direction;
-                camera.position.x = car.position.x;
-                camera.position.y = 0.001+Math.pow(car.speed,2)*50;
-                camera.position.z = car.position.z;
-                camera.lookAt(car.position);
+            if(car.position.z < currentMap.bbox.east+THRESHOLD && typeof maps[currentMap.longitude-BBOX_SIZE][currentMap.latitude] == "undefined"){
+                var map = new Map(currentMap.longitude-BBOX_SIZE, currentMap.latitude);
+                maps[currentMap.longitude-BBOX_SIZE][currentMap.latitude] = map;
+                eachMap.push(map);
+            }
 
+            if(car.position.x < currentMap.bbox.north+THRESHOLD && typeof maps[currentMap.longitude][currentMap.latitude-BBOX_SIZE] == "undefined"){
+                var map = new Map(currentMap.longitude, currentMap.latitude-BBOX_SIZE);
+                maps[currentMap.longitude][currentMap.latitude-BBOX_SIZE] = map;
+                eachMap.push(map);
+            }
 
-                if(typeof maps[currentMap.longitude+BBOX_SIZE] == "undefined"){
-                        maps[currentMap.longitude+BBOX_SIZE]=[];
-                }
+            if(car.position.x > currentMap.bbox.south-THRESHOLD && typeof maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] == "undefined"){
+                var map = new Map(currentMap.longitude, currentMap.latitude+BBOX_SIZE);
+                maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] = map;
+                eachMap.push(map);
+            }
 
-                if(car.position.z > currentMap.bbox.west-THRESHOLD && typeof maps[currentMap.longitude+BBOX_SIZE][currentMap.latitude] == "undefined"){
-                    var map = new Map(currentMap.longitude+BBOX_SIZE, currentMap.latitude);
-                    maps[currentMap.longitude+BBOX_SIZE][currentMap.latitude] = map;
-                    eachMap.push(map);
-                }
-
-                if(typeof maps[currentMap.longitude-BBOX_SIZE] == "undefined"){
-                        maps[currentMap.longitude-BBOX_SIZE]=[];
-                }
-
-                if(car.position.z < currentMap.bbox.east+THRESHOLD && typeof maps[currentMap.longitude-BBOX_SIZE][currentMap.latitude] == "undefined"){
-                    var map = new Map(currentMap.longitude-BBOX_SIZE, currentMap.latitude);
-                    maps[currentMap.longitude-BBOX_SIZE][currentMap.latitude] = map;
-                    eachMap.push(map);
-                }
-
-                if(car.position.x < currentMap.bbox.north+THRESHOLD && typeof maps[currentMap.longitude][currentMap.latitude-BBOX_SIZE] == "undefined"){
-                    var map = new Map(currentMap.longitude, currentMap.latitude-BBOX_SIZE);
-                    maps[currentMap.longitude][currentMap.latitude-BBOX_SIZE] = map;
-                    eachMap.push(map);
-                }
-
-                if(car.position.x > currentMap.bbox.south-THRESHOLD && typeof maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] == "undefined"){
-                    var map = new Map(currentMap.longitude, currentMap.latitude+BBOX_SIZE);
-                    maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] = map;
-                    eachMap.push(map);
-                }
-
-                car.visible = visibleCar;
-
-
+            car.visible = visibleCar;
 
                 $.each(eachMap, function(index1, value1){
                     if( currentMap != value1 &&
@@ -212,8 +224,6 @@
                         currentMap = value1;
 //                        console.log("moved");
                     }
-                    
-                    
                     $.each(value1.buildings, function(index, value){
                         if(value.visible == visibleBuilding) return false;
                         value.visible = visibleBuilding;
@@ -223,7 +233,11 @@
                         value.visible = visibleBound;
                     });
                 });
-
+                $.each(value1.bounds, function(index, value){
+                    if(value.visible == visibleBound) return false;
+                    value.visible = visibleBound;
+                });
+            });
 
                 renderer.render( scene, camera );
             }else{
@@ -248,7 +262,12 @@
                 camera.lookAt(pos);
                 renderer.render( scene, camera );
             }
+            var pos = camera.position.clone();
+            pos.y=0;
+            camera.lookAt(pos);
+            renderer.render( scene, camera );
         }
+    }
 </script>
 </head>
 <body>
