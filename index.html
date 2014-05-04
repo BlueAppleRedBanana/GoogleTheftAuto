@@ -76,13 +76,31 @@
 					        geometry.faces.push(new THREE.Face3(0, x + 1, x + 2));
 					    }
 
-					    geometry.computeBoundingSphere();
+						material = new THREE.MeshBasicMaterial({color:"#000000",wireframe:true});
+
+						mesh = new THREE.Mesh(geometry, material);
+						mesh.geometry.computeBoundingBox ();
+
+						var bBox = mesh.geometry.boundingBox;
+
+						scene.add(mesh);
+						lines.push(mesh);
+
+						var geometry = new THREE.Geometry();
+							geometry.vertices.push(new THREE.Vector3(bBox.min.x,0,bBox.min.z));
+							geometry.vertices.push(new THREE.Vector3(bBox.min.x,0,bBox.max.z));
+							geometry.vertices.push(new THREE.Vector3(bBox.max.x,0,bBox.max.z));
+							geometry.vertices.push(new THREE.Vector3(bBox.max.x,0,bBox.min.z));
+
+						for (x = 0; x < 2; x++) {
+					        geometry.faces.push(new THREE.Face3(0, x + 1, x + 2));
+					    }
 
 						material = new THREE.MeshBasicMaterial({color:"#ff0000",wireframe:true});
 
-						mesh = new THREE.Mesh(geometry, material);
-						scene.add(mesh);
-						lines.push(mesh);
+						bound = new THREE.Mesh(geometry, material);
+						scene.add(bound);
+
 					}
 				});
 
