@@ -184,6 +184,8 @@
 		}
 
 		function render() {
+			car.__dirtyPosition = true;
+			car.__dirtyRotation = true;
 			scene.simulate(); // run physics
 
 		    if(leftkey){
