@@ -16,7 +16,7 @@
     var currentMap;
     var maps = [];
     var container, camera, scene, renderer, car;
-    
+
     var eachMap = [];
 
     var leftkey = false,
@@ -30,7 +30,8 @@
 
     var visibleCar = !false,
         visibleBuilding = !false,
-        visibleBound = !false;
+        visibleBound = !false,
+        visibleSectionBound = !false;
 
     $(document).ready(function(){
 
@@ -39,7 +40,7 @@
         function init() {
             container = document.createElement( 'div' );
             document.body.appendChild( container );
-            camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.0001, 1000 );
+            camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.000001, 0.003 );
             scene = new THREE.Scene();
 
             scene.add( new THREE.AmbientLight( 0xcccccc ) );
@@ -82,7 +83,7 @@
             });
 
             $(document).keyup(function(e){
-                console.log(e.keyCode);
+//                console.log(e.keyCode);
                 if(e.keyCode == 82){
                     zoominkey = false;
                 }else if(e.keyCode == 84){
@@ -95,6 +96,8 @@
                     visibleBuilding = !visibleBuilding;
                 }else if(e.keyCode == 51){
                     visibleBound = !visibleBound;
+                }else if(e.keyCode == 52){
+                    visibleSectionBound = !visibleSectionBound;
                 }else if(e.keyCode == 65 || e.keyCode == 37){
                     leftkey = false;
                 }else if(e.keyCode == 68 || e.keyCode == 39){
@@ -107,7 +110,7 @@
                 return false;
             });
 
-            animate();
+//            animate();
         }
 
         function onWindowResize() {
@@ -122,28 +125,28 @@
     });
 
     function animate() {
-        render();
+        render();/*
         collisions = detectCollision();
         var buildings = currentMap.buildings;
         $.each(buildings, function(index, object) {
-        	object.material.color.setHex(0xE6E1B5);
+            object.material.color.setHex(0xE6E1B5);
         })
         $.each(collisions, function(index, object) {
-        	object.material.color.setHex(0xD6D1A5);
-        })
+            object.material.color.setHex(0xD6D1A5);
+        })*/
         requestAnimationFrame( animate );
     }
 
     function updateCarVertices() {
-    	// TODO
+        // TODO
     }
     
     function render() {
         if(!stop){
             if(leftkey){
-              if(car.steering<0.05){ car.steering += 0.002; }
+              if(car.steering<0.05){ car.steering += 0.0004; }
             }else if(rightkey){
-              if(car.steering>-0.05){  car.steering -= 0.002; }
+              if(car.steering>-0.05){  car.steering -= 0.0004; }
             }else{
               car.steering *= 0.1;
             }
@@ -160,78 +163,65 @@
               car.speed += car.power;
             }
 
-                if(leftkey){
-                  if(car.steering<0.05){ car.steering += 0.0004; }
-                }else if(rightkey){
-                  if(car.steering>-0.05){  car.steering -= 0.0004; }
-                }else{
-                  car.steering *= 0.1;
-                }
-
             car.direction += car.steering;
 
-            car.position.x += car.speed * -Math.cos(car.direction) * 0.001;
-            car.position.z += car.speed * Math.sin(car.direction) * 0.001;
-            car.speed *=0.992;
+            car.position.x += car.speed * Math.cos(car.direction) * 0.001;
+            car.position.y += car.speed * Math.sin(car.direction) * 0.001;
+            car.speed *=0.99;
 
-            car.rotation.y = car.direction;
+            car.rotation.z = car.direction;
             camera.position.x = car.position.x;
-            camera.position.y = 0.002+Math.pow(car.speed,2)*5;
-            camera.position.z = car.position.z;
+            camera.position.z = 0.0003+Math.abs(car.speed)/5;
+            camera.position.y = car.position.y;
             camera.lookAt(car.position);
 
-            car.rotation.y = car.direction;
-            camera.position.x = car.position.x;
-            camera.position.y = 0.001+Math.pow(car.speed,2)*50;
-            camera.position.z = car.position.z;
-            camera.lookAt(car.position);
-            if(car.position.z > currentMap.bbox.west-THRESHOLD && typeof maps[currentMap.longitude+BBOX_SIZE][currentMap.latitude] == "undefined"){
-                var map = new Map(currentMap.longitude+BBOX_SIZE, currentMap.latitude);
-                maps[currentMap.longitude+BBOX_SIZE][currentMap.latitude] = map;
-                eachMap.push(map);
+            if(typeof maps[currentMap.longitude+BBOX_SIZE] == "undefined"){
+                    maps[currentMap.longitude+BBOX_SIZE]=[];
             }
-
             if(typeof maps[currentMap.longitude-BBOX_SIZE] == "undefined"){
                     maps[currentMap.longitude-BBOX_SIZE]=[];
             }
-
-            if(car.position.z < currentMap.bbox.east+THRESHOLD && typeof maps[currentMap.longitude-BBOX_SIZE][currentMap.latitude] == "undefined"){
+            if(car.position.x < currentMap.bbox.west+THRESHOLD && typeof maps[currentMap.longitude-BBOX_SIZE][currentMap.latitude] == "undefined"){
                 var map = new Map(currentMap.longitude-BBOX_SIZE, currentMap.latitude);
                 maps[currentMap.longitude-BBOX_SIZE][currentMap.latitude] = map;
                 eachMap.push(map);
             }
 
-            if(car.position.x < currentMap.bbox.north+THRESHOLD && typeof maps[currentMap.longitude][currentMap.latitude-BBOX_SIZE] == "undefined"){
+            if(car.position.x > currentMap.bbox.east-THRESHOLD && typeof maps[currentMap.longitude+BBOX_SIZE][currentMap.latitude] == "undefined"){
+                var map = new Map(currentMap.longitude+BBOX_SIZE, currentMap.latitude);
+                maps[currentMap.longitude+BBOX_SIZE][currentMap.latitude] = map;
+                eachMap.push(map);
+            }
+
+            if(car.position.y < currentMap.bbox.south+THRESHOLD && typeof maps[currentMap.longitude][currentMap.latitude-BBOX_SIZE] == "undefined"){
                 var map = new Map(currentMap.longitude, currentMap.latitude-BBOX_SIZE);
                 maps[currentMap.longitude][currentMap.latitude-BBOX_SIZE] = map;
                 eachMap.push(map);
             }
 
-            if(car.position.x > currentMap.bbox.south-THRESHOLD && typeof maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] == "undefined"){
+            if(car.position.y > currentMap.bbox.north-THRESHOLD && typeof maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] == "undefined"){
                 var map = new Map(currentMap.longitude, currentMap.latitude+BBOX_SIZE);
                 maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] = map;
                 eachMap.push(map);
             }
 
             car.visible = visibleCar;
-
-                $.each(eachMap, function(index1, value1){
-                    if( currentMap != value1 &&
-                        car.position.x < value1.bbox.south &&
-                        car.position.x > value1.bbox.north &&
-                        car.position.z < value1.bbox.west &&
-                        car.position.z < value1.bbox.east ){
-                        currentMap = value1;
+            //console.log(car.position);
+            $.each(eachMap, function(index1, value1){
+                if( currentMap != value1 &&
+                    car.position.x < value1.bbox.east &&
+                    car.position.x > value1.bbox.west &&
+                    car.position.y < value1.bbox.north &&
+                    car.position.y > value1.bbox.south ){
+                    currentMap = value1;
 //                        console.log("moved");
-                    }
-                    $.each(value1.buildings, function(index, value){
-                        if(value.visible == visibleBuilding) return false;
-                        value.visible = visibleBuilding;
-                    });
-                    $.each(value1.bounds, function(index, value){
-                        if(value.visible == visibleBound) return false;
-                        value.visible = visibleBound;
-                    });
+                }
+                if(value1.section)
+                    value1.section.visible = visibleSectionBound;
+
+                $.each(value1.buildings, function(index, value){
+                    if(value.visible == visibleBuilding) return false;
+                    value.visible = visibleBuilding;
                 });
                 $.each(value1.bounds, function(index, value){
                     if(value.visible == visibleBound) return false;
@@ -239,31 +229,28 @@
                 });
             });
 
-                renderer.render( scene, camera );
-            }else{
-                if(leftkey){
-                    camera.position.z+=0.0001;
-                }else if(rightkey){
-                    camera.position.z-=0.0001;
-                }
-                if(downkey){
-                    camera.position.x+=0.0001;
-                }else if(upkey){
-                    camera.position.x-=0.0001;
-                }
-
-                if(zoominkey){
-                    camera.position.y+=0.0001;
-                }else if(zoomoutkey){
-                    camera.position.y-=0.0001;
-                }
-                var pos = camera.position.clone();
-                pos.y=0;
-                camera.lookAt(pos);
-                renderer.render( scene, camera );
+            renderer.render( scene, camera );
+        }else{
+            if(leftkey){
+                camera.position.x-=0.0001;
+            }else if(rightkey){
+                camera.position.x+=0.0001;
             }
+
+            if(downkey){
+                camera.position.y-=0.0001;
+            }else if(upkey){
+                camera.position.y+=0.0001;
+            }
+
+            if(zoominkey){
+                camera.position.z+=0.0001;
+            }else if(zoomoutkey){
+                camera.position.z-=0.0001;
+            }
+            
             var pos = camera.position.clone();
-            pos.y=0;
+            pos.z=0;
             camera.lookAt(pos);
             renderer.render( scene, camera );
         }
