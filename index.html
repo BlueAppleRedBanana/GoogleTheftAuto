@@ -6,51 +6,26 @@
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 <script src="lib/jquery-1.11.1.min.js"></script>
 <script src="lib/three.min.js"></script>
-<script src="threejs/loaders/ObjectLoader.js"></script>
 <script src="lib/AssimpJSONLoader.js"></script>
-<script src="lib/JSONLoader.js"></script>
-<script src="config.js"></script>
-<script src="lib/osm2geo.js"></script>
 <script>
 	$(document).ready(function(){
 		var container;
-		var camera, scene, renderer, objects;
-		var clock = new THREE.Clock();
+		var camera;
+		var scene, renderer, objects;
 		var car, object;
+					var mouseX = 0, mouseY = 0;
+
 		init();
 
-		var loader1 = new THREE.AssimpJSONLoader();
-		loader1.load( 'models/assimp/jeep/jeep1.ms3d.json', function ( assimpjson ) {
-			car = assimpjson;
-			assimpjson.scale.x = assimpjson.scale.y = assimpjson.scale.z = 0.2;
-			assimpjson.updateMatrix();
-			scene.add(assimpjson);
-			console.log(car);
-			car.velocity = 0;
-			animate();
+		var lines = [];
 
-			$(document).keydown(function(e){
-				console.log(e.keyCode);
-				if(e.keyCode == "65"){
-					car.rotation.y += .2; 
-				}else if(e.keyCode == "68"){
-					car.rotation.y -= .2; 
-				}else if(e.keyCode == "87"){
-					car.velocity -= .1;
-				}else if(e.keyCode == "83"){
-					car.velocity += .1;
-				}
-				return false;
-			});
-		});
+		var offsetX, offsetZ;
 
 		function init() {
 			container = document.createElement( 'div' );
 			document.body.appendChild( container );
 
-			camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 2000 );
-			camera.position.set( 0, longitude, latitude );
-
+			camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
 			scene = new THREE.Scene();
 
 			scene.add( new THREE.AmbientLight( 0xcccccc ) );
@@ -69,52 +44,49 @@
 
 			window.addEventListener( 'resize', onWindowResize, false );
 
-			var geom = new THREE.Geometry();
-			v1 = new THREE.Vector3(5,0,5);
-			v2 = new THREE.Vector3(3,0,5);
-			v3 = new THREE.Vector3(5,0,3);
-			geom.vertices.push(v1);
-			geom.vertices.push(v2);
-			geom.vertices.push(v3);
 /*
-			$.each($("node"), function(index, value){
-				if(index<3){
-					vertex = new THREE.Vector3($(value).attr("lat")/10.0,0,$(value).attr("lon")/10.0);
-					vertex = new THREE.Vector3(5,0,5);
-					geom.vertices.push(vertex);
-					console.log(vertex);
-				}
+			var loader1 = new THREE.AssimpJSONLoader();
+			loader1.load( 'models/assimp/jeep/jeep1.ms3d.json', function ( assimpjson ) {
+				assimpjson.updateMatrix();
+				scene.add(assimpjson);
 			});
 */
-			geom.faces.push( new THREE.Face3( 0, 1, 2 ) );
-			object = new THREE.Mesh( geom, new THREE.MeshBasicMaterial({color: 0xff0000}));
-			scene.add(object);
+			
+			$("#data").load('map4.json', function(e){
+				var data = $.parseJSON(e);
+				$("#data").hide();
+				$.each(data.features, function(index, value){
+					if(value.properties.building == "yes"){
+						var geometry = new THREE.Geometry();
+						$.each(value.geometry.coordinates[0], function(index, vertex){
+							if(!offsetX){
+								offsetX = vertex[0];
+								offsetZ = vertex[1];
+							}
+							geometry.vertices.push(new THREE.Vector3((vertex[0]-offsetX)*1000,0,(vertex[1]-offsetZ)*1000));
+						//	console.log(new THREE.Vector3(vertex[0]-offsetX,0,vertex[1]-offsetZ));
+						});
+						var line = new THREE.Line( geometry, new THREE.LineBasicMaterial({color:0x000000}));
+						lines.push(line);
 
-/*
-			var geometry = new THREE.CubeGeometry( 1, 1, 1 );
-			var material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-			var mesh = new THREE.Mesh( geometry, material );
-			scene.add( mesh );
-			console.log(mesh);
-*/
-			// loadJSON("map.js");
-			var manager = new THREE.LoadingManager();
-			manager.onProgress = function ( item, loaded, total ) {
-				console.log( item, loaded, total );
-			};
-
-			var loader = new THREE.ObjectLoader(manager);
-			loader.load( "map.obj", function (object) {
-				object.traverse(function (child) {
-					scene.add(object);
-				})
+						scene.add( line );
+					}
+				});
+				var geometry = new THREE.Geometry();
+					geometry.vertices.push(new THREE.Vector3(-74,0,40));
+					geometry.vertices.push(new THREE.Vector3(-60,0,40));
+					geometry.vertices.push(new THREE.Vector3(-60,0,30));
+					geometry.vertices.push(new THREE.Vector3(-74,0,30));
+					geometry.vertices.push(new THREE.Vector3(-74,0,40));
+				var line = new THREE.Line( geometry, new THREE.LineBasicMaterial({color:0x000000}));
+				lines.push(line);
+				scene.add( line );
+				animate();
 			});
-			//loadJSON("map2.js");
-			//geo3 = osm2geo("map3.osm");
-
+			
 
 		}
-
+/*
 		function loadJSON(file) {
 			var loader = new THREE.JSONLoader();
         	loader.load( file, modelToScene );
@@ -127,36 +99,36 @@
             console.log( obj );
             scene.add( obj );
         }
+		function onDocumentMouseMove(event) {
 
-		function onWindowResize( event ) {
-			renderer.setSize( window.innerWidth, window.innerHeight );
-			camera.aspect = window.innerWidth / window.innerHeight;
-			camera.updateProjectionMatrix();
+			mouseX = event.clientX - windowHalfX;
+			mouseY = event.clientY - windowHalfY;
+
 		}
+*/
+			function onWindowResize() {
 
-		var t = 0;
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
 		function animate() {
 			requestAnimationFrame( animate );
 			render();
 		}
 
-		//
 		function render() {
-			var timer = Date.now() * 0.0005;
-//			console.log(car);
-//				camera.position.x = Math.cos( timer ) * 10;
-//				camera.position.y = 4;
-//				camera.position.z = Math.sin( timer ) * 10;
+			camera.position.x = 0;
+			camera.position.y = 10;
+			camera.position.z = 15;
+			camera.lookAt(lines[0].geometry.vertices[0]);
 
-//			car.position.x += car.velocity*Math.sin(car.rotation.y);
-//			car.position.z += car.velocity*Math.cos(car.rotation.y);
-
-//			camera.position.x = car.position.x-car.velocity*Math.sin(car.rotation.y);
-//			camera.position.z = car.position.z-car.velocity*Math.cos(car.rotation.y);
-//			camera.position.y = 5;
-//			camera.lookAt(new THREE.Vector3(5.48,0,5.52));
-			car.position.x=5;
-			camera.lookAt(new THREE.Vector3());
 			renderer.render( scene, camera );
 
 		}
@@ -164,67 +136,8 @@
 </script>
 </head>
 <body>
-	<div id="googlemap"> <node id="1425831500" visible="true" version="1" changeset="9233223" timestamp="2011-09-07T04:11:23Z" user="IamCrazy" uid="490409" lat="54.8435267" lon="55.2865866"/>
- <node id="918178428" visible="true" version="4" changeset="8377596" timestamp="2011-06-08T09:21:15Z" user="alff31" uid="388967" lat="54.8766854" lon="55.2837664"/>
- <node id="1070476961" visible="true" version="3" changeset="9233223" timestamp="2011-09-07T04:11:45Z" user="IamCrazy" uid="490409" lat="54.8431807" lon="55.2886185"/>
- <node id="676888067" visible="true" version="5" changeset="8377596" timestamp="2011-06-08T09:21:12Z" user="alff31" uid="388967" lat="54.8556519" lon="55.2999545"/>
- <node id="1070488118" visible="true" version="2" changeset="6805996" timestamp="2010-12-30T06:24:52Z" user="alff31" uid="388967" lat="54.8469731" lon="55.3058715"/>
- <node id="1070476981" visible="true" version="4" changeset="8377596" timestamp="2011-06-08T09:21:09Z" user="alff31" uid="388967" lat="54.8638601" lon="55.3000813"/>
- <node id="1070476960" visible="true" version="2" changeset="6805996" timestamp="2010-12-30T06:24:57Z" user="alff31" uid="388967" lat="54.8431191" lon="55.3004010"/>
- <node id="676888047" visible="true" version="4" changeset="6805996" timestamp="2010-12-30T06:24:59Z" user="alff31" uid="388967" lat="54.8399939" lon="55.3076513"/>
- <node id="1070488115" visible="true" version="2" changeset="6805996" timestamp="2010-12-30T06:24:59Z" user="alff31" uid="388967" lat="54.9005991" lon="55.2758441"/>
- <node id="1070488114" visible="true" version="2" changeset="6805996" timestamp="2010-12-30T06:25:11Z" user="alff31" uid="388967" lat="54.9097123" lon="55.2739678"/>
- <node id="1070488116" visible="true" version="3" changeset="8294859" timestamp="2011-05-30T18:39:02Z" user="alff31" uid="388967" lat="54.8961298" lon="55.2763080"/>
- <node id="1070488106" visible="true" version="3" changeset="6944482" timestamp="2011-01-12T07:13:09Z" user="alff31" uid="388967" lat="54.9334110" lon="55.2796512"/>
- <node id="1070488109" visible="true" version="4" changeset="8377596" timestamp="2011-06-08T09:21:11Z" user="alff31" uid="388967" lat="54.9272040" lon="55.2695663"/>
- <node id="1183127150" visible="true" version="1" changeset="7439818" timestamp="2011-03-02T18:14:00Z" user="alff31" uid="388967" lat="54.8631784" lon="55.2991682"/>
- <node id="1183127266" visible="true" version="1" changeset="7439818" timestamp="2011-03-02T18:14:04Z" user="alff31" uid="388967" lat="54.8441252" lon="55.3061799"/>
- <node id="1183127330" visible="true" version="1" changeset="7439818" timestamp="2011-03-02T18:14:06Z" user="alff31" uid="388967" lat="54.8563331" lon="55.2987943"/>
- <node id="1183127375" visible="true" version="1" changeset="7439818" timestamp="2011-03-02T18:14:07Z" user="alff31" uid="388967" lat="54.8454185" lon="55.3058949"/>
- <node id="1183127479" visible="true" version="1" changeset="7439818" timestamp="2011-03-02T18:14:10Z" user="alff31" uid="388967" lat="54.8454382" lon="55.3061799"/>
- <node id="1183127537" visible="true" version="1" changeset="7439818" timestamp="2011-03-02T18:14:12Z" user="alff31" uid="388967" lat="54.8563208" lon="55.2984955"/>
- <node id="1183127574" visible="true" version="1" changeset="7439818" timestamp="2011-03-02T18:14:13Z" user="alff31" uid="388967" lat="54.8631825" lon="55.2994356"/>
- <node id="1183127592" visible="true" version="1" changeset="7439818" timestamp="2011-03-02T18:14:14Z" user="alff31" uid="388967" lat="54.8441252" lon="55.3064421"/>
- <node id="1306034940" visible="true" version="1" changeset="8294859" timestamp="2011-05-30T18:38:43Z" user="alff31" uid="388967" lat="54.9328649" lon="55.2789832"/>
- <node id="1069912188" visible="true" version="5" changeset="8294859" timestamp="2011-05-30T18:38:53Z" user="alff31" uid="388967" lat="54.9321397" lon="55.2775683"/>
- <node id="1069944445" visible="true" version="3" changeset="8294859" timestamp="2011-05-30T18:39:01Z" user="alff31" uid="388967" lat="54.8836739" lon="55.2798482"/>
- <node id="1071413252" visible="true" version="4" changeset="8294859" timestamp="2011-05-30T18:39:03Z" user="alff31" uid="388967" lat="54.9347565" lon="55.2810904"/>
- <node id="1069912185" visible="true" version="5" changeset="8294859" timestamp="2011-05-30T18:39:04Z" user="alff31" uid="388967" lat="54.9283838" lon="55.2701037"/>
- <node id="676888063" visible="true" version="4" changeset="8294859" timestamp="2011-05-30T18:39:05Z" user="alff31" uid="388967" lat="54.8882405" lon="55.2773886"/>
- <node id="1315979119" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:02Z" user="alff31" uid="388967" lat="54.8675111" lon="55.3005639"/>
- <node id="1315979121" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:02Z" user="alff31" uid="388967" lat="54.8374568" lon="55.3071267"/>
- <node id="1315979127" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:03Z" user="alff31" uid="388967" lat="54.8730547" lon="55.2930660"/>
- <node id="1315979129" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:03Z" user="alff31" uid="388967" lat="54.8528148" lon="55.3019470"/>
- <node id="1315979146" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:03Z" user="alff31" uid="388967" lat="54.8418964" lon="55.3075173"/>
- <node id="1315979151" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:03Z" user="alff31" uid="388967" lat="54.8763384" lon="55.2841444"/>
- <node id="1315979152" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:04Z" user="alff31" uid="388967" lat="54.8705840" lon="55.3000044"/>
- <node id="1315979160" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:04Z" user="alff31" uid="388967" lat="54.8565893" lon="55.2993799"/>
- <node id="1315979172" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:04Z" user="alff31" uid="388967" lat="54.8361817" lon="55.3068161"/>
- <node id="1315979181" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:05Z" user="alff31" uid="388967" lat="54.8709310" lon="55.2991471"/>
- <node id="1315979188" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:05Z" user="alff31" uid="388967" lat="54.8757423" lon="55.2852470"/>
- <node id="1315979191" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:05Z" user="alff31" uid="388967" lat="54.8576430" lon="55.2992948"/>
- <node id="1315979203" visible="true" version="1" changeset="8377596" timestamp="2011-06-08T09:21:06Z" user="alff31" uid="388967" lat="54.9278203" lon="55.2697158"/>
- <node id="676882875" visible="true" version="7" changeset="8377596" timestamp="2011-06-08T09:21:10Z" user="alff31" uid="388967" lat="54.8349717" lon="55.3066474"/>
- <node id="1070488120" visible="true" version="3" changeset="8377596" timestamp="2011-06-08T09:21:15Z" user="alff31" uid="388967" lat="54.8455963" lon="55.3067394"/>
- <node id="1070488117" visible="true" version="3" changeset="8377596" timestamp="2011-06-08T09:21:15Z" user="alff31" uid="388967" lat="54.8500000" lon="55.3039346"/>
- <node id="1070476959" visible="true" version="4" changeset="8377596" timestamp="2011-06-08T09:21:15Z" user="alff31" uid="388967" lat="54.8437926" lon="55.3071392"/>
- <node id="1315979208" visible="true" version="2" changeset="8732334" timestamp="2011-07-15T15:37:15Z" user="alff31" uid="388967" lat="54.8697334" lon="55.3008383"/>
- <node id="1362834512" visible="true" version="1" changeset="8732334" timestamp="2011-07-15T15:36:52Z" user="alff31" uid="388967" lat="54.9089105" lon="55.2741329"/>
- <node id="1362834598" visible="true" version="1" changeset="8732334" timestamp="2011-07-15T15:36:55Z" user="alff31" uid="388967" lat="54.8270567" lon="55.3074693"/>
- <node id="1362834627" visible="true" version="1" changeset="8732334" timestamp="2011-07-15T15:36:57Z" user="alff31" uid="388967" lat="54.8701603" lon="55.3006733"/>
- <node id="1362834684" visible="true" version="1" changeset="8732334" timestamp="2011-07-15T15:36:59Z" user="alff31" uid="388967" lat="54.8265205" lon="55.3072690"/>
- <node id="1362834694" visible="true" version="1" changeset="8732334" timestamp="2011-07-15T15:37:00Z" user="alff31" uid="388967" lat="54.8337377" lon="55.3069384"/>
- <node id="1362834746" visible="true" version="1" changeset="8732334" timestamp="2011-07-15T15:37:02Z" user="alff31" uid="388967" lat="54.8339744" lon="55.3068622"/>
- <node id="1362834807" visible="true" version="1" changeset="8732334" timestamp="2011-07-15T15:37:05Z" user="alff31" uid="388967" lat="54.8280361" lon="55.3075450"/>
- <node id="1071249843" visible="true" version="3" changeset="8732334" timestamp="2011-07-15T15:37:14Z" user="alff31" uid="388967" lat="54.8313745" lon="55.3080070"/>
- <node id="1070488100" visible="true" version="3" changeset="8732334" timestamp="2011-07-15T15:37:14Z" user="alff31" uid="388967" lat="54.8318140" lon="55.3079045"/>
- <node id="1070488101" visible="true" version="3" changeset="8732334" timestamp="2011-07-15T15:37:21Z" user="alff31" uid="388967" lat="54.8261518" lon="55.3069585"/>
- <node id="1071249855" visible="true" version="3" changeset="8732334" timestamp="2011-07-15T15:37:33Z" user="alff31" uid="388967" lat="54.8299152" lon="55.3078880"/>
- <node id="676888065" visible="true" version="6" changeset="8732334" timestamp="2011-07-15T15:37:35Z" user="alff31" uid="388967" lat="54.8704330" lon="55.3003527"/>
- <node id="1069945836" visible="true" version="4" changeset="8732334" timestamp="2011-07-15T15:37:37Z" user="alff31" uid="388967" lat="54.8781822" lon="55.2828878"/>
- <node id="1362848657" visible="true" version="1" changeset="8732518" timestamp="2011-07-15T16:00:59Z" user="alff31" uid="388967" lat="54.8917488" lon="55.2767927"/>
- <node id="1362848678" visible="true" version="1" changeset="8732518" timestamp="2011-07-15T16:01:00Z" user="alff31" uid="388967" lat="54.8905100" lon="55.2769469"/>
- <node id="1362848683" visible="true" version="1" changeset="8732518" timestamp="2011-07-15T16:01:00Z" user="alff31" uid="388967" lat="54.8913708" lon="55.2768345"/></div>
+
+	<div id="data"></div>
 
 </body>
 </html>
