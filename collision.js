@@ -1,12 +1,52 @@
 
 var minDistance = 0.00001;
 
-function detectCollision() {
+
+function rotateBbox(bBox) {
+	var cos = Math.cos(car.direction);
+    var sin = Math.sin(car.direction);
+	bBox.min.x*=cos;
+	bBox.min.y*=sin;
+	bBox.max.x*=cos;
+    bBox.max.y*=sin;
+}
+function drawBoundingBox(object) {
+	//car.geometry.applyMatrix( new THREE.Matrix4().makeRotationZ( car.direction/2));
+	car.geometry.computeBoundingBox();
+	//rotateBbox(object.geometry.boundingBox);
+
+	car.geometry.boundingBox.min.x += car.position.x;
+	car.geometry.boundingBox.max.x += car.position.x;
+	car.geometry.boundingBox.min.y += car.position.y;
+	car.geometry.boundingBox.max.y += car.position.y;
+    var bBox = object.geometry.boundingBox;
+
+    var rectShape = new THREE.Shape();
+    rectShape.moveTo( bBox.min.x,bBox.min.y );
+    rectShape.lineTo( bBox.min.x,bBox.max.y );
+    rectShape.lineTo( bBox.max.x,bBox.max.y );
+    rectShape.lineTo( bBox.max.x,bBox.min.y );
+    rectShape.lineTo( bBox.min.x,bBox.min.y );
+    
+
+    var rectGeom = new THREE.ShapeGeometry( rectShape );
+    var bound = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe:true }));
+    object.bounds = bound;
+    scene.add(bound);
+}
+
+function updateBoundingBox() {
 	car.geometry.computeBoundingBox();
 	car.geometry.boundingBox.min.x += car.position.x;
 	car.geometry.boundingBox.max.x += car.position.x;
-	car.geometry.boundingBox.min.z += car.position.z;
-	car.geometry.boundingBox.max.z += car.position.z;
+	car.geometry.boundingBox.min.y += car.position.y;
+	car.geometry.boundingBox.max.y += car.position.y;
+}
+
+function detectCollision() {
+	updateBoundingBox();
+	//drawBoundingBox(car);
+	
 	// console.log(car.geometry.boundingBox.max);
 	//console.log(car.position);
 	buildings = currentMap.buildings;
@@ -33,13 +73,13 @@ function detectCollision() {
 	}
 	// debugger;
 
-	candidates = testIntersection(car, candidates);
+	candidates = checkCarCollision(car, candidates);
 	return candidates;
 }
 
 function setCenter(obj) {
 	obj.position.x = (obj.geometry.boundingBox.max.x + obj.geometry.boundingBox.min.x) /2;
-	obj.position.z = (obj.geometry.boundingBox.max.z + obj.geometry.boundingBox.min.z) /2;
+	obj.position.y = (obj.geometry.boundingBox.max.y + obj.geometry.boundingBox.min.y) /2;
 	obj.geometry.computeBoundingBox();
 }
 
@@ -57,12 +97,11 @@ function getNearOnly(car, distance, objects) {
 }
 
 function simpleDistance(obj1, obj2) {
-	return Math.min(Math.abs(obj1.position.x - obj2.position.x),Math.abs(obj1.position.z - obj2.position.z));
+	return Math.min(Math.abs(obj1.position.x - obj2.position.x),Math.abs(obj1.position.y - obj2.position.y));
 }
 
 function getDistance(obj1, obj2) {
 	var result = (Math.pow(Math.abs(obj1.x-obj2.x),2) + Math.pow(Math.abs(obj1.y-obj2.y),2));
-	console.log(result);
 	return result;
 }
 
@@ -86,24 +125,21 @@ function checkBound(car, obj) {
 	// console.log(bound1.max);
 	// console.log(bound2.max);
 	
-	top1 = bound1.min.x;
-	bottom1 = bound1.max.x;
-	right1 = bound1.min.z;
-	left1 = bound1.max.z;
+	left1 = bound1.min.x;
+	right1 = bound1.max.x;
+	bottom1 = bound1.min.y;
+	top1 = bound1.max.y;
 
-	top2 = bound2.min.x;
-	bottom2 = bound2.max.x;
-	right2 = bound2.min.z;
-	left2 = bound2.max.z;
+	left2 = bound2.min.x;
+	right2 = bound2.max.x;
+	bottom2 = bound2.min.y;
+	top2 = bound2.max.y;
 
-	return !(bottom1 < top2 ||
-		right1 > left2 ||
-		top1 > bottom2 ||
-		left1 < right2 );
+	return !(bottom1 > top2 ||
+		right1 < left2 ||
+		top1 < bottom2 ||
+		left1 > right2 );
 }
-
-
-
 
 function testIntersection(car, candidates) {
 	result = [];
@@ -116,24 +152,82 @@ function testIntersection(car, candidates) {
 	return result;
 }
 
-function objectIntersect(car, object) {
-	// var carPoints = car.geometry.vertices;
-	// for (key1 in carPoints) {
-	// 	// var startPoint = carPoints[key1];
-	// 	// var endPoint = (key1 != carPoints.length-1) ? carPoints[key1+1] : carPoints[0];
 
-	// 	// // startPoint.x += 
-	// 	// // var line = {"s":startPoint,"e":endPoint};
-	// 	// // var line1 = {"X":0,"z":0}
-	// 	// line1.x = line.x + car.position.x;
-	// 	// line1.z = line.z + car.position.z;
-	// 	for (key2 in object.boundary) {
-	// 		var line2 = object.boundary[key2];
-	// 		if (lineIntersect(line1,line2)) {
-	// 			return true;
-	// 		}
-	// 	}
-	// }
+
+function checkCarCollision(car, objects) {
+	result = []
+	for (key in objects) {
+		var object = objects[key];
+
+		// Using BoundingBox
+		//var bound = car.geometry.boundingBox;
+		// test four side
+		// testx = bound.max.x;
+		// testy = bound.max.y;
+		// if (pnpoly(testx,testy,object)) {
+		// 	result.push(object); continue;
+		// }
+		// testy = bound.min.y;
+		// if (pnpoly(testx,testy,object)) {
+		// 	result.push(object); continue;
+		// }
+
+		// testx = bound.min.x;
+		// testy = bound.max.y;
+		// if (pnpoly(testx,testy,object)) {
+		// 	result.push(object); continue;
+		// }
+		// testy = bound.min.y;
+		// if (pnpoly(testx,testy,object)) {
+		// 	result.push(object); continue;
+		// }
+
+		// using geometry itself
+		var vertices = car.geometry.vertices;
+		for (key in vertices) {
+			vertex = vertices[key];
+			var testx = car.geometry.vertices[0].x + car.position.x;
+			var testy = car.geometry.vertices[0].y + car.position.y;
+			if (pnpoly(testx,testy,object)) {
+				result.push(object); 
+				break;
+			}
+		}
+	}
+	return result;
+ }
+
+function pnpoly(testx,testy, obj) {
+	var nvert = obj.boundary.length;
+	var vertices = obj.boundary;
+	var i, j, c;
+	for (i=0, j=nvert-1; i<nvert; j=i++) {
+		if ( ((vertices[i].y >= testy) != (vertices[j].y >= testy)) &&
+			(testx <= (vertices[j].x-vertices[i].x)*(testy-vertices[i].y/vertices[j].y-vertices[i].y) + vertices[i].x)) {
+			c = !c;
+		}
+	}
+	return c;
+}
+
+function objectIntersect(car, object) {
+	var carPoints = car.geometry.vertices;
+	for (key1 in carPoints) {
+		var startPoint = carPoints[key1];
+		var endPoint = (key1 != carPoints.length-1) ? carPoints[key1+1] : carPoints[0];
+
+		// startPoint.x += 
+		// var line = {"s":startPoint,"e":endPoint};
+		// var line1 = {"X":0,.y":0}
+		line1.x = line.x + car.position.x;
+		line1.y = line.y + car.position.y;
+		for (key2 in object.boundary) {
+			var line2 = object.boundary[key2];
+			if (lineIntersect(line1,line2)) {
+				return true;
+			}
+		}
+	}
 	return false;
 }
 
