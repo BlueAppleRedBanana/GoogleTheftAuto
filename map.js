@@ -69,8 +69,6 @@ function Map(longitude, latitude){
         $.each(objects, function(index, value){
             if(value.properties.building == "yes"){
                 var boundary = [];
-//                var geometry = new THREE.Geometry();
-
                 var rectShape = new THREE.Shape();
                 var startPoint;
                 $.each(value.geometry.coordinates[0], function(index2, vertex){
@@ -80,96 +78,58 @@ function Map(longitude, latitude){
                     }else{
                         rectShape.lineTo(vertex[0],vertex[1]);
                     }
-//                    geometry.vertices.push(new THREE.Vector3(vertex[1],0,vertex[0]));
                     boundary.push([vertex[0], vertex[1]]);
                 });
-                rectShape.lineTo(startPoint[0],startPoint[1]);
 
-                var rectGeom = new THREE.ShapeGeometry( rectShape );
-                var building = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color:"#E6E1B5", wireframe:false }));
+                if(startPoint){
+                    rectShape.lineTo(startPoint[0],startPoint[1]);
 
-/*
-                var n = geometry.vertices.length;
+                    var rectGeom = new THREE.ShapeGeometry( rectShape );
+                    var building = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color:"#E6E1B5", wireframe:false }));
 
-                for (x = 0; x < n-2; x++) {
-                    geometry.faces.push(new THREE.Face3(n-1, n-2-x, n-3-x));
+                    building.boundary = boundary;
+                    building.geometry.computeBoundingBox();
+
+                    var bBox = building.geometry.boundingBox;
+                    scene.add(building);
+                    me.buildings.push(building);
+
+
+
+                    var rectShape = new THREE.Shape();
+                    rectShape.moveTo( bBox.min.x,bBox.min.y );
+                    rectShape.lineTo( bBox.min.x,bBox.max.y );
+                    rectShape.lineTo( bBox.max.x,bBox.max.y );
+                    rectShape.lineTo( bBox.max.x,bBox.min.y );
+                    rectShape.lineTo( bBox.min.x,bBox.min.y );
+
+                    var rectGeom = new THREE.ShapeGeometry( rectShape );
+                    var bound = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe:true }));     
+
+                    building.bounds = bound;
+                    me.bounds.push(bound);
+                    scene.add(bound);
                 }
-
-                material = new THREE.MeshBasicMaterial({color:"#E6E1B5",wireframe:false});
-
-                building = new THREE.Mesh(geometry, material);
-  */
-                building.boundary = boundary;
-                building.geometry.computeBoundingBox();
-
-                var bBox = building.geometry.boundingBox;
-                scene.add(building);
-                me.buildings.push(building);
-
-
-
-                var rectShape = new THREE.Shape();
-                rectShape.moveTo( bBox.min.x,bBox.min.y );
-                rectShape.lineTo( bBox.min.x,bBox.max.y );
-                rectShape.lineTo( bBox.max.x,bBox.max.y );
-                rectShape.lineTo( bBox.max.x,bBox.min.y );
-                rectShape.lineTo( bBox.min.x,bBox.min.y );
-
-                var rectGeom = new THREE.ShapeGeometry( rectShape );
-                var bound = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe:true }));     
-
-/*
-                var geometry = new THREE.Geometry();
-                    geometry.vertices.push(new THREE.Vector3(bBox.min.x,0,bBox.min.z));
-                    geometry.vertices.push(new THREE.Vector3(bBox.min.x,0,bBox.max.z));
-                    geometry.vertices.push(new THREE.Vector3(bBox.max.x,0,bBox.max.z));
-                    geometry.vertices.push(new THREE.Vector3(bBox.max.x,0,bBox.min.z));
-
-                for (x = 0; x < 2; x++) {
-                    geometry.faces.push(new THREE.Face3(3, 2-x, 1-x));
-                }
-
-                material = new THREE.MeshBasicMaterial({color:"#ff0000",wireframe:true});
-                bound = new THREE.Mesh(geometry, material);
-*/                
-                building.bounds = bound;
-                me.bounds.push(bound);
-                scene.add(bound);
             }
         });
 
         if(!car){
 
             var rectShape = new THREE.Shape();
-            rectShape.moveTo(.00004,.00002);
-            rectShape.lineTo( 0,.00002);
-            rectShape.lineTo( 0,0 );
-            rectShape.lineTo( .00004,0 );
-            rectShape.lineTo(.00004,.00002);
+            rectShape.moveTo(.00002,.00001);
+            rectShape.lineTo(-.00002,.00001);
+            rectShape.lineTo(-.00002,-.00001);
+            rectShape.lineTo( .00002,-.00001 );
+            rectShape.lineTo(.00002,.00001);
 
             var rectGeom = new THREE.ShapeGeometry( rectShape );
             car = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) ) ;     
 
-/*
-            var geometry = new THREE.Geometry();
-            geometry.vertices.push(new THREE.Vector3(.00004,0,.00002));
-            geometry.vertices.push(new THREE.Vector3(0,0,.00002));
-            geometry.vertices.push(new THREE.Vector3(0,0,0));
-            geometry.vertices.push(new THREE.Vector3(.00004,0,0));
-        
-            for (x = 0; x < 2; x++) {
-                geometry.faces.push(new THREE.Face3(0, x + 1, x + 2));
-            }
-
-            material = new THREE.MeshBasicMaterial({color:"#0000cc",wireframe:true});
-            car = new THREE.Mesh( geometry, material);
-*/
             car.position.x = longitude;
             car.position.y = latitude;
             car.direction = 0;
             car.steering = 0;
             car.speed = 0;
-            console.log(car);
 
             scene.add( car );
 

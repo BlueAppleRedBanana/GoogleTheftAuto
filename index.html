@@ -4,12 +4,44 @@
     <title>Google Thief Auto</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 <script src="lib/jquery-1.11.1.min.js"></script>
 <script src="lib/three.min.js"></script>
 <script src="lib/osm2geo.js"></script>
 <script src="map.js"></script>
 <script src="collision.js"></script>
 <script>
+    google.load('earth','1',{'other_params':"sensor={false}"});
+</script>
+<style>
+    #map3d{
+        position:absolute;
+        width:100%;
+        visibility:hidden;
+    }
+    .container{
+        position:absolute;
+        top:0px;
+        width:100%;
+        text-align:center;
+    }
+    .container canvas{
+        border: 1px solid black;
+    }
+
+    .minimap{
+        position: fixed;
+        right:0px;
+        top:0px;
+    }
+</style>
+<script>
+    var ge;
+    var gecamera;
+    var loc;
+    var model;
+
+
     var waitingAjax = false;
     var BBOX_SIZE = 0.001;
     var THRESHOLD = 0.0004;
@@ -24,7 +56,8 @@
         upkey = false,
         downkey = false,
         zoominkey = false,
-        zoomoutkey = false;
+        zoomoutkey = false,
+        minimapTogglekey = false;
 
     var stop = false;
 
@@ -38,9 +71,12 @@
         init();
 
         function init() {
+            google.earth.createInstance("map3d",initCB, failureCB);
+
             container = document.createElement( 'div' );
             document.body.appendChild( container );
-            camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.000001, 0.003 );
+            $(container).addClass("container");
+            camera = new THREE.PerspectiveCamera( 50, 1, 0.000001, 0.003 );
             scene = new THREE.Scene();
 
             scene.add( new THREE.AmbientLight( 0xcccccc ) );
@@ -53,11 +89,9 @@
             scene.add(directionalLight);
 
             renderer = new THREE.WebGLRenderer({antialias:true});
-            renderer.setSize( window.innerWidth, window.innerHeight );
+            renderer.setSize( window.innerHeight, window.innerHeight );
             renderer.setClearColorHex( 0xffffff, 1 );
             container.appendChild( renderer.domElement );
-
-            window.addEventListener( 'resize', onWindowResize, false );
             
             var initMap = new Map(-74.0059,40.7120);
             maps[-74.0059]=[];
@@ -83,8 +117,18 @@
             });
 
             $(document).keyup(function(e){
-//                console.log(e.keyCode);
-                if(e.keyCode == 82){
+                if(e.keyCode == 77){
+                    minimapTogglekey = !minimapTogglekey;
+                    if(minimapTogglekey){
+                        $(".container canvas").addClass("minimap");
+                        renderer.setSize( 160, 160 );
+                        $("#map3d").css("visibility","visible");
+                    }else{
+                        $(".container canvas").removeClass("minimap");                        
+                        $("#map3d").css("visibility","hidden");
+                        renderer.setSize( window.innerHeight, window.innerHeight );
+                    }
+                }else if(e.keyCode == 82){
                     zoominkey = false;
                 }else if(e.keyCode == 84){
                     zoomoutkey = false;
@@ -113,15 +157,55 @@
 //            animate();
         }
 
-        function onWindowResize() {
-            windowHalfX = window.innerWidth / 2;
-            windowHalfY = window.innerHeight / 2;
-
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-
-            renderer.setSize( window.innerWidth, window.innerHeight );
+        function initCB(instance) {
+            ge = instance;
+            ge.getWindow().setVisibility(true);
+            ge.getOptions().setStatusBarVisibility(false);
+            ge.getNavigationControl().setVisibility(ge.VISIBILITY_HIDE);
+            ge.getOptions().setFlyToSpeed(ge.SPEED_TELEPORT);
+            ge.getLayerRoot().enableLayerById(ge.LAYER_BUILDINGS, 1);
+            ge.getLayerRoot().enableLayerById(ge.LAYER_TREES, 1); 
+            ge.getOptions().setMouseNavigationEnabled(0);
+            setLocation(ge);
         }
+
+        function setLocation(ge) {
+//            google.earth.addEventListener(ge, "frameend", handleFrame);
+
+//            car = new Car(40.7311, -73.9887, direction);
+
+            var placemark = ge.createPlacemark('');
+            placemark.setName('model');
+            model = ge.createModel('');
+            ge.getFeatures().appendChild(placemark);
+            loc = ge.createLocation('');
+            model.setLocation(loc);
+            var link = ge.createLink('');
+
+            // link.setHref('http://www.edwardrockhands.com/GoogleTheftAuto/models/'+
+            //   'splotchy_box.dae');
+            link.setHref('http://earth-api-samples.googlecode.com/svn/trunk/examples/' +
+             'static/splotchy_box.dae');
+
+            model.setLink(link);
+            var scale = model.getScale();
+            var n= .1;
+            scale.setX(n);
+            scale.setY(n);
+            scale.setZ(n);
+            var la = ge.getView().copyAsLookAt(ge.ALTITUDE_RELATIVE_TO_GROUND);
+            
+            loc.setLatitude(40.7120);
+            loc.setLongitude(-74.0059);
+
+            placemark.setGeometry(model);
+            ge.getView().setAbstractView(la);
+        }
+
+        function failureCB(errorCode) {
+
+        }
+
     });
 
     function animate() {
@@ -142,6 +226,39 @@
     }
     
     function render() {
+
+
+        car.visible = visibleCar;
+
+        $.each(eachMap, function(index1, value1){
+            if( currentMap != value1 &&
+                car.position.x < value1.bbox.east &&
+                car.position.x > value1.bbox.west &&
+                car.position.y < value1.bbox.north &&
+                car.position.y > value1.bbox.south ){
+                currentMap = value1;
+            }
+            if(value1.section){
+                if(value1 == currentMap){
+                    value1.section.material.color.setHex(0x007148);
+                }else{
+                    value1.section.material.color.setHex(0x8CBEB2);
+                }                    
+            }
+
+            if(value1.section)
+                value1.section.visible = visibleSectionBound;
+
+            $.each(value1.buildings, function(index, value){
+                if(value.visible == visibleBuilding) return false;
+                value.visible = visibleBuilding;
+            });
+            $.each(value1.bounds, function(index, value){
+                if(value.visible == visibleBound) return false;
+                value.visible = visibleBound;
+            });
+        });
+
         if(!stop){
             if(leftkey){
               if(car.steering<0.05){ car.steering += 0.0004; }
@@ -175,6 +292,26 @@
             camera.position.y = car.position.y;
             camera.lookAt(car.position);
 
+            // Goggle Earth
+            if(loc){
+                loc.setLatitude(car.position.y);
+                loc.setLongitude(car.position.x);
+                var orientation = model.getOrientation();
+                orientation.setHeading(car.direction/Math.PI*180%360);
+                model.setOrientation(orientation);                
+            }
+
+            var ca = ge.createCamera('');
+
+            ca.setLongitude(car.position.x - 0.001*Math.cos(car.direction));
+            ca.setLatitude(car.position.y - 0.001*Math.sin(car.direction));
+            ca.setTilt(85);
+            ca.setAltitude(20);
+            ca.setHeading(360-car.direction/Math.PI*180%360);
+
+            ge.getView().setAbstractView(ca);
+
+
             if(typeof maps[currentMap.longitude+BBOX_SIZE] == "undefined"){
                     maps[currentMap.longitude+BBOX_SIZE]=[];
             }
@@ -204,31 +341,6 @@
                 maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] = map;
                 eachMap.push(map);
             }
-
-            car.visible = visibleCar;
-            //console.log(car.position);
-            $.each(eachMap, function(index1, value1){
-                if( currentMap != value1 &&
-                    car.position.x < value1.bbox.east &&
-                    car.position.x > value1.bbox.west &&
-                    car.position.y < value1.bbox.north &&
-                    car.position.y > value1.bbox.south ){
-                    currentMap = value1;
-//                        console.log("moved");
-                }
-                if(value1.section)
-                    value1.section.visible = visibleSectionBound;
-
-                $.each(value1.buildings, function(index, value){
-                    if(value.visible == visibleBuilding) return false;
-                    value.visible = visibleBuilding;
-                });
-                $.each(value1.bounds, function(index, value){
-                    if(value.visible == visibleBound) return false;
-                    value.visible = visibleBound;
-                });
-            });
-
             renderer.render( scene, camera );
         }else{
             if(leftkey){
@@ -258,8 +370,6 @@
 </script>
 </head>
 <body>
-
-    <div id="data"></div>
-
+<div id="map3d"></div>
 </body>
 </html>
