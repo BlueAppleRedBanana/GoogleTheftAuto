@@ -7,6 +7,14 @@
 <script src="lib/jquery-1.11.1.min.js"></script>
 <script src="lib/three.min.js"></script>
 <script src="lib/AssimpJSONLoader.js"></script>
+<script src="Physijs/physi.js"></script>
+<script>
+	'use strict';
+
+	Physijs.scripts.worker = 'Physijs/physijs_worker.js';
+	Physijs.scripts.ammo = 'examples/js/ammo.js';
+
+</script>
 <script>
   var leftkey = false,
       rightkey = false,
@@ -29,7 +37,7 @@
 			document.body.appendChild( container );
 
 			camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
-			scene = new THREE.Scene();
+			scene = new Physijs.Scene();
 
 			scene.add( new THREE.AmbientLight( 0xcccccc ) );
 
@@ -186,11 +194,7 @@
 		    orientation.setHeading(360-car.direction/Math.PI*180%360);
 		    model.setOrientation(orientation);
 */
-
-
-
 			renderer.render( scene, camera );
-
 		}
 	});
 </script>
