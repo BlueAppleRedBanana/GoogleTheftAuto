@@ -7,6 +7,7 @@
 <script src="lib/jquery-1.11.1.min.js"></script>
 <script src="lib/three.min.js"></script>
 <script src="lib/osm2geo.js"></script>
+<script src="map.js"></script>
 <script>
     var BBOX_SIZE = 0.005;
     var THRESHOLD = 0.0001;
@@ -145,13 +146,20 @@
             camera.position.z = car.position.z;
             camera.lookAt(car.position);
 
-            console.log(car.position.x, currentMap.bbox.west+THRESHOLD);
+//            console.log(car.position.x, currentMap.bbox.west+THRESHOLD);
 
             if(car.position.x<currentMap.bbox.west+THRESHOLD){
-                currentMap.bbox.
-                var map = 
-//                console.log("west");
-
+                var match = false;
+                $.each(maps, function(index, value){
+                    if(value.latitude == currentMap.latitude && value.longitude == currentMap.longitude+THRESHOLD){
+                        match = true;
+                    }
+                });
+                if(!match){
+                    var map = new Map(currentMap.longitude, currentMap.longitude+THRESHOLD);
+                    maps.push(map);
+                    currentMap = map;
+                }
             }
 
             car.visible = visibleCar;
