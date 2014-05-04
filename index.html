@@ -14,6 +14,9 @@
     google.load('earth','1',{'other_params':"sensor={false}"});
 </script>
 <style>
+    body{
+        margin:0px;
+    }
     #map3d{
         position:absolute;
         width:100%;
@@ -216,12 +219,11 @@
         }
         var buildings = currentMap.buildings;
         $.each(buildings, function(index, object) {
-            object.material.color.setHex(0xE6E1B5);
+            object.material.color.setHex(0x000000);
         });
         $.each(collisions, function(index, object) {
-            object.material.color.setHex(0xD6D1A5);
-        });
-        */
+            object.material.color.setHex(0x00FF00);
+        });*/
         requestAnimationFrame( animate );
     }
 
@@ -285,6 +287,7 @@
               car.speed += car.power;
             }
             car.geometry.applyMatrix( new THREE.Matrix4().makeRotationZ(car.steering));
+            car.bumper.applyMatrix( new THREE.Matrix4().makeRotationZ(car.steering));
             car.direction += car.steering;
 
             car.position.x += car.speed * Math.cos(car.direction) * 0.001;
@@ -308,11 +311,9 @@
             if(ge){
                 var ca = ge.createCamera('');
 
-                ca.setLongitude(car.position.x + 0*Math.cos(car.direction+Math.PI));
-                ca.setLatitude(car.position.y + 0*Math.sin(car.direction+Math.PI));
-                console.log(Math.cos(car.direction+Math.PI), Math.sin(car.direction+Math.PI));
-                console.log(car.direction/Math.PI*180%360);
-                ca.setTilt(90);
+                ca.setLongitude(car.position.x + 0.0002*Math.cos(car.direction+Math.PI));
+                ca.setLatitude(car.position.y + 0.0002*Math.sin(car.direction+Math.PI));
+                ca.setTilt(80+0.001+Math.abs(car.speed)*200);
                 ca.setAltitude(5);
                 ca.setHeading(-car.direction/Math.PI*180%360+90);
 
@@ -349,6 +350,58 @@
                 maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] = map;
                 eachMap.push(map);
             }
+
+            var dir = new THREE.Vector3(Math.cos(car.direction),Math.sin(car.direction),0);
+
+            $.each(currentMap.buildings, function(index, value){
+                var flag = false;
+                if(
+                value.geometry.boundingBox.min.x <= car.position.x &&
+                value.geometry.boundingBox.min.y <= car.position.y &&
+                value.geometry.boundingBox.max.x >= car.position.x &&
+                value.geometry.boundingBox.max.y >= car.position.y
+                ){
+                    value.bounds.material.color.setHex("0x00FF00");
+                    if(!car.collision){
+                        var x = car.position.x;
+                        var y = car.position.y;
+                        $.each(value.boundary, function(index1, value1){
+                            var p1 = {};
+                            p1.x = value.boundary[index1].x;
+                            p1.y = value.boundary[index1].y;
+
+                            var p2 = {};
+                            p2.x = value.boundary[(index1+1)%value.boundary.length].x;
+                            p2.y = value.boundary[(index1+1)%value.boundary.length].y;
+
+                            if(x >= p1.x && x <= p2.x || x <= p1.x && x >= p2.x &&
+                                y >= p1.y && y <= p2.y || y <= p1.y && y >= p2.y){
+                                var a = (p1.y-p2.y)/(p1.x-p2.x);
+                                var p=p1.y - a*p1.x;
+                                var c = Math.abs(a*x - y + p) / Math.sqrt(a*a + 1);
+                                if(c<0.00002){
+                                    flag = true;
+                                    car.collision=true;
+                                    car.direction = car.direction - Math.atan(a);
+                                }
+                            }
+                        });
+                    }
+                    if(!flag && car.collision){
+                        car.collision = false;
+                        console.log("reset");
+                    }
+
+                }else{
+                    value.bounds.material.color.setHex("0xff0000");
+                }
+            });
+//            var intersects = raycaster.intersectObjects( currentMap.buildings );
+//            console.log(car.position, dir.normalize());
+//            console.log(currentMap.buildings);
+
+//            if(intersects.length)  console.log(intersects);
+
             renderer.render( scene, camera );
         }else{
             if(leftkey){

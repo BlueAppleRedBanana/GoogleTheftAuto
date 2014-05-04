@@ -129,6 +129,18 @@ function Map(longitude, latitude){
 
             var rectGeom = new THREE.ShapeGeometry( rectShape );
             car = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) ) ;     
+            car.collision = false;
+            var rectShape = new THREE.Shape();
+            var BUMPERSIZE = 1.5;
+            rectShape.moveTo(-0.00001*BUMPERSIZE,  0.00001*BUMPERSIZE );
+            rectShape.lineTo( 0.00003*BUMPERSIZE,  0.00001*BUMPERSIZE );
+            rectShape.lineTo( 0.00003*BUMPERSIZE,  -0.00001*BUMPERSIZE );
+            rectShape.lineTo(-0.00001*BUMPERSIZE,  -0.00001*BUMPERSIZE );
+            rectShape.lineTo(-0.00001*BUMPERSIZE,  0.00001*BUMPERSIZE );
+
+
+            var rectGeom = new THREE.ShapeGeometry( rectShape );
+            car.bumper = rectGeom;
 
             car.position.x = longitude;
             car.position.y = latitude;
