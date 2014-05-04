@@ -1,66 +1,144 @@
 
-var minDistance = 0.0000001;
+var minDistance = 0.00001;
 
-detectCollision = function() {
+function detectCollision() {
+	car.geometry.computeBoundingBox();
+	car.geometry.boundingBox.min.x += car.position.x;
+	car.geometry.boundingBox.max.x += car.position.x;
+	car.geometry.boundingBox.min.z += car.position.z;
+	car.geometry.boundingBox.max.z += car.position.z;
+	// console.log(car.geometry.boundingBox.max);
+	//console.log(car.position);
 	buildings = currentMap.buildings;
-	//candidates = getNearOnly(car, minDistance, buildings);
-	// if (candidates.length > 0) {
+	// console.log(currentMap.buildings.length);
 
+	// var candidates = getNearOnly(car, minDistance, buildings);
+	// if (candidates.length == 0) {
+	// 	return false;
+	// } else { 
+	// 	console.log("near: " + candidates.length);
 	// }
-}
-
-function bound(obj1, obj2) {
-	// bound1 = obj1.geometry.boundingbox;
-	// bound2 = obj2.geometry.boundingbox;
-	// bottom = bound1.min.x;
-	// top = bound1.max.x;
-	// left = bound1.
-
-	// bound1.max.x < 
-	if (obj1.x < obj2.x + obj2.width && 
-		obj1.x + obj1.width > obj2.x &&
-		obj1.y < obj2.y + obj2.height &&
-		obj1.y + obj1.height > oj2.y) {
-	// objects are touching
+	var candidates = buildings;
+	candidates = getBoundCollision(candidates);
+	$.each(buildings, function(index, object) {
+        	object.bounds.material.color.setHex(0xFF0000);
+    });
+	if (candidates.length == 0) {
+		return false;
+	} else {
+		console.log("bound: " + candidates.length);	
+        $.each(candidates, function(index, object) {
+        	object.bounds.material.color.setHex(0x0000FF);
+        });
 	}
+	// debugger;
+
+	candidates = testIntersection(car, candidates);
+	return candidates;
 }
 
-function distance(obj1, obj2) {
-	return (Math.pow(Math.abs(obj1.x-obj2.x),2) + Math.pow(Math.abs(obj1.y-obj2.y),2));
+function setCenter(obj) {
+	obj.position.x = (obj.geometry.boundingBox.max.x + obj.geometry.boundingBox.min.x) /2;
+	obj.position.z = (obj.geometry.boundingBox.max.z + obj.geometry.boundingBox.min.z) /2;
+	obj.geometry.computeBoundingBox();
 }
-
-// function getCenter(bound) {
-// 	bound.
-// }
-
-// function simpleDistance(obj1, obj2) {
-// 	return max(Math.abs(obj1.))
-// }
 
 function getNearOnly(car, distance, objects) {
 	result = [];
-	for (obj in objects) {
-		if (distance(car, obj) < distance) {
-			result.append(obj);
+	for (key in objects) {
+		var obj = objects[key];
+		setCenter(obj);
+		console.log(getDistance(car, obj));
+		if (getDistance(car, obj) < distance) {
+			result.push(obj);
 		}
 	}
 	return result;
 }
 
-function testIntersection(car, object) {
-	for (line1 in car.boundary) {
-		for (line2 in object.boundary) {
-			if (lineIntersect(line1,line2)) {
-				return true;
-			}
+function simpleDistance(obj1, obj2) {
+	return Math.min(Math.abs(obj1.position.x - obj2.position.x),Math.abs(obj1.position.z - obj2.position.z));
+}
+
+function getDistance(obj1, obj2) {
+	var result = (Math.pow(Math.abs(obj1.x-obj2.x),2) + Math.pow(Math.abs(obj1.y-obj2.y),2));
+	console.log(result);
+	return result;
+}
+
+function getBoundCollision(candidates) {
+	result = [];
+	for (key in candidates) {
+		obj = candidates[key];
+		if (checkBound(car, obj)) {
+			result.push(obj);
 		}
 	}
-	return false;
+	return result;
+}
+
+function checkBound(car, obj) {
+	if (obj.geometry.boundingBox == null) {
+		obj.geometry.computeBoundingBox();
+	}
+	bound1 = car.geometry.boundingBox;
+	bound2 = obj.geometry.boundingBox;
+	// console.log(bound1.max);
+	// console.log(bound2.max);
+	
+	top1 = bound1.min.x;
+	bottom1 = bound1.max.x;
+	right1 = bound1.min.z;
+	left1 = bound1.max.z;
+
+	top2 = bound2.min.x;
+	bottom2 = bound2.max.x;
+	right2 = bound2.min.z;
+	left2 = bound2.max.z;
+
+	return !(bottom1 < top2 ||
+		right1 > left2 ||
+		top1 > bottom2 ||
+		left1 < right2 );
 }
 
 
 
-function checkIntersects(line1, line2) {
+
+function testIntersection(car, candidates) {
+	result = [];
+	for (key in candidates) {
+		candidate = candidates[key];
+		if (objectIntersect(car, candidate)) {
+			result.push(candidate);
+		}
+	}
+	return result;
+}
+
+function objectIntersect(car, object) {
+	// var carPoints = car.geometry.vertices;
+	// for (key1 in carPoints) {
+	// 	// var startPoint = carPoints[key1];
+	// 	// var endPoint = (key1 != carPoints.length-1) ? carPoints[key1+1] : carPoints[0];
+
+	// 	// // startPoint.x += 
+	// 	// // var line = {"s":startPoint,"e":endPoint};
+	// 	// // var line1 = {"X":0,"z":0}
+	// 	// line1.x = line.x + car.position.x;
+	// 	// line1.z = line.z + car.position.z;
+	// 	for (key2 in object.boundary) {
+	// 		var line2 = object.boundary[key2];
+	// 		if (lineIntersect(line1,line2)) {
+	// 			return true;
+	// 		}
+	// 	}
+	// }
+	return false;
+}
+
+
+function lineIntersect(line1, line2) {
 	v1 = line1.s;
 	v2 = line1.e;
 	v3 = line2.s;
