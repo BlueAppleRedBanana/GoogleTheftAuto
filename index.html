@@ -6,7 +6,68 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 <script src="lib/jquery-1.11.1.min.js"></script>
 <script src="lib/three.min.js"></script>
+<script src="lib/osm2geo.js"></script>
 <script>
+
+    var maps = [];
+    
+    var initMap = new Map(-74.0059,40.7120);
+
+    function Map(longitude, latitude){        
+        var BBOX_SIZE = 0.004;
+        var THRESHOLD = 0.00004;
+
+        var bbox = {
+                "north":latitude + BBOX_SIZE/2 , 
+                "south":latitude - BBOX_SIZE/2,
+                "east":longitude + BBOX_SIZE/2,
+                "west":longitude - BBOX_SIZE/2};
+
+        console.log(bbox);
+
+        var objects = [];
+        var BASE_URL = "http://api.openstreetmap.org/api/0.6/map?bbox="
+
+        function getUrl(oldbox, direction) {
+            var west = oldbox.west;
+            var east = oldbox.east;
+            var north = oldbox.north;
+            var south = oldbox.south;
+            switch (direction) {
+                case "east" :
+                    left = right;
+                    right = right + BBOX_SIZE;
+                    break;
+                case "west" :
+                    right = left;
+                    left = left + BBOX_SIZE;
+                    break;
+                case "north" :
+                    south = north;
+                    north = north + BBOX_SIZE;
+                    break;
+                case "south" :
+                    north = south;
+                    south = south + BBOX_SIZE;
+                    break;
+            }
+            return BASE_URL += west + "," + south + "," + east + "," + north;
+        }
+
+        function getOSM(oldbox, direction) {
+            var url = getUrl(oldbox,direction);
+            $.ajax({
+                type: 'GET',
+                url: url//"http://api.openstreetmap.org/api/0.6/map?bbox=11.54,48.14,11.543,48.145"
+            }).done(function (data) {
+                objects = (osm2geo(data)).features;
+                console.log(objects);
+            });
+        }
+
+        getOSM(bbox,false);
+    };
+
     var leftkey = false,
         rightkey = false,
         upkey = false,
@@ -27,8 +88,6 @@
 
         var buildings = [];
         var bounds = [];
-
-        var boundPt = [];
 
         var offsetX, offsetZ;
 
@@ -105,7 +164,7 @@
                         bound.buildingID = building.id;
                         bounds.push(bound);
                         scene.add(bound);
-                        console.log(bound);
+                        //console.log(bound);
 
                     }
                 });
