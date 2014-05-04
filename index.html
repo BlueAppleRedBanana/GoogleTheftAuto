@@ -37,8 +37,6 @@
 			document.body.appendChild( container );
 			camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
 			scene = new Physijs.Scene();
-
-
 			scene.add( new THREE.AmbientLight( 0xcccccc ) );
 
 			var directionalLight = new THREE.DirectionalLight(/*Math.random() * 0xffffff*/0xeeeeee );
@@ -48,7 +46,7 @@
 			directionalLight.position.normalize();
 			scene.add( directionalLight );
 
-			renderer = new THREE.WebGLRenderer();
+			renderer = new THREE.WebGLRenderer({antialias:true});
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			renderer.setClearColorHex( 0xffffff, 1 );
 			container.appendChild( renderer.domElement );
@@ -84,9 +82,10 @@
 					        geometry.faces.push(new THREE.Face3(0, x + 1, x + 2));
 					    }
 
-						material = new THREE.MeshBasicMaterial({color:"#000000",wireframe:true});
+						material = new THREE.MeshBasicMaterial({color:"#000000",wireframe:false});
 
-						mesh = new THREE.Mesh(geometry, material);
+//						mesh = new THREE.Mesh(geometry, material);
+						mesh = new Physijs.ConvexMesh(geometry, material);
 						mesh.geometry.computeBoundingBox ();
 
 						var bBox = mesh.geometry.boundingBox;
@@ -119,8 +118,11 @@
 					geometry.vertices.push(new THREE.Vector3(0,0,.1));
 					geometry.vertices.push(new THREE.Vector3(0,0,0));
 					geometry.vertices.push(new THREE.Vector3(.2,0,0));
-					geometry.vertices.push(new THREE.Vector3(.2,0,.1));
-				car = new THREE.Line( geometry, new THREE.LineBasicMaterial({color:0x0000cc}));
+						for (x = 0; x < 2; x++) {
+					        geometry.faces.push(new THREE.Face3(0, x + 1, x + 2));
+					    }
+					    material = new THREE.MeshBasicMaterial({color:"#0000cc",wireframe:true});
+				car = new Physijs.BoxMesh( geometry, material);
 				car.direction = 0;
 				car.steering = 0;
 				car.speed = 0;
@@ -182,7 +184,7 @@
 		}
 
 		function render() {
-
+			scene.simulate(); // run physics
 
 		    if(leftkey){
 		      if(car.steering<0.05){ car.steering += 0.002; }
@@ -215,7 +217,7 @@
 
 
 			camera.position.x = car.position.x;
-			camera.position.y = 1+Math.pow(car.speed,2)/5000;
+			camera.position.y = 2+Math.pow(car.speed,2)/5000;
 			camera.position.z = car.position.z;
 			camera.lookAt(car.position);
 
