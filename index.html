@@ -132,10 +132,10 @@
         }
         var buildings = currentMap.buildings;
         $.each(buildings, function(index, object) {
-            object.material.color.setHex(0xE6E1B5);
+            object.material.color.setHex(0x000000);
         });
         $.each(collisions, function(index, object) {
-            object.material.color.setHex(0xD6D1A5);
+            object.material.color.setHex(0x00FF00);
         });
 
         requestAnimationFrame( animate );
@@ -167,6 +167,7 @@
               car.speed += car.power;
             }
             car.geometry.applyMatrix( new THREE.Matrix4().makeRotationZ(car.steering));
+            car.bumper.applyMatrix( new THREE.Matrix4().makeRotationZ(car.steering));
             car.direction += car.steering;
 
             car.position.x += car.speed * Math.cos(car.direction) * 0.001;

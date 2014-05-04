@@ -12,13 +12,7 @@ function rotateBbox(bBox) {
 }
 function drawBoundingBox(object) {
 	//car.geometry.applyMatrix( new THREE.Matrix4().makeRotationZ( car.direction/2));
-	car.geometry.computeBoundingBox();
-	//rotateBbox(object.geometry.boundingBox);
-
-	car.geometry.boundingBox.min.x += car.position.x;
-	car.geometry.boundingBox.max.x += car.position.x;
-	car.geometry.boundingBox.min.y += car.position.y;
-	car.geometry.boundingBox.max.y += car.position.y;
+	updateCarBoundingBox();
     var bBox = object.geometry.boundingBox;
 
     var rectShape = new THREE.Shape();
@@ -27,15 +21,35 @@ function drawBoundingBox(object) {
     rectShape.lineTo( bBox.max.x,bBox.max.y );
     rectShape.lineTo( bBox.max.x,bBox.min.y );
     rectShape.lineTo( bBox.min.x,bBox.min.y );
-    
 
     var rectGeom = new THREE.ShapeGeometry( rectShape );
-    var bound = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe:true }));
+    var bound = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color: 0xff5555, wireframe:true }));
     object.bounds = bound;
     scene.add(bound);
 }
 
-function updateBoundingBox() {
+function drawCarBumper() {
+    var bumpers = car.bumper.vertices;
+    var newBumper =[];
+	for ( key in bumpers ) {
+		var bumperx = bumpers[key].x + car.position.x;
+		var bumpery = bumpers[key].y + car.position.y;
+		newBumper.push({"x":bumperx,"y":bumpery});
+	}
+
+	var rectShape = new THREE.Shape();
+	rectShape.moveTo(newBumper[0].x, newBumper[0].y);
+	for (key in newBumper) {
+		rectShape.lineTo( newBumper[key].x, newBumper[key].y);
+	}
+	rectShape.lineTo(newBumper[0].x, newBumper[0].y);
+
+	var rectGeom = new THREE.ShapeGeometry(rectShape);
+	var bound = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color: 0x5555ff, wireframe:true }));
+    scene.add(bound);
+}
+
+function updateCarBoundingBox() {
 	car.geometry.computeBoundingBox();
 	car.geometry.boundingBox.min.x += car.position.x;
 	car.geometry.boundingBox.max.x += car.position.x;
@@ -44,8 +58,9 @@ function updateBoundingBox() {
 }
 
 function detectCollision() {
-	updateBoundingBox();
-	//drawBoundingBox(car);
+	updateCarBoundingBox();
+	drawBoundingBox(car);
+	drawCarBumper();
 	
 	// console.log(car.geometry.boundingBox.max);
 	//console.log(car.position);
@@ -183,11 +198,11 @@ function checkCarCollision(car, objects) {
 		// }
 
 		// using geometry itself
-		var vertices = car.geometry.vertices;
+		var vertices = car.bumper.vertices;
 		for (key in vertices) {
-			vertex = vertices[key];
-			var testx = car.geometry.vertices[0].x + car.position.x;
-			var testy = car.geometry.vertices[0].y + car.position.y;
+			var vertex = vertices[key];
+			var testx = vertex.x + car.position.x;
+			var testy = vertex.y + car.position.y;
 			if (pnpoly(testx,testy,object)) {
 				result.push(object); 
 				break;

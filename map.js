@@ -104,7 +104,7 @@ function Map(longitude, latitude){
                 rectShape.lineTo(startPoint[0],startPoint[1]);
 
                 var rectGeom = new THREE.ShapeGeometry( rectShape );
-                var building = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color:"#E6E1B5", wireframe:false, oppacity:"50%" }));
+                var building = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color:"#000000", wireframe:true}));
 
 /*
                 var n = geometry.vertices.length;
@@ -138,6 +138,17 @@ function Map(longitude, latitude){
             var rectGeom = new THREE.ShapeGeometry( rectShape );
             car = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) ) ;     
 
+            var rectShape = new THREE.Shape();
+            var BUMPERSIZE = 1.5;
+            rectShape.moveTo(-0.00001*BUMPERSIZE,  0.00001*BUMPERSIZE );
+            rectShape.lineTo( 0.00003*BUMPERSIZE,  0.00001*BUMPERSIZE );
+            rectShape.lineTo( 0.00003*BUMPERSIZE,  -0.00001*BUMPERSIZE );
+            rectShape.lineTo(-0.00001*BUMPERSIZE,  -0.00001*BUMPERSIZE );
+            rectShape.lineTo(-0.00001*BUMPERSIZE,  0.00001*BUMPERSIZE );
+
+
+            var rectGeom = new THREE.ShapeGeometry( rectShape );
+            car.bumper = rectGeom;
 /*
             var geometry = new THREE.Geometry();
             geometry.vertices.push(new THREE.Vector3(.00004,0,.00002));
