@@ -8,14 +8,26 @@
 <script src="lib/three.min.js"></script>
 <script src="lib/osm2geo.js"></script>
 <script>
-
+    var currentMap;
     var maps = [];
-    
-    var initMap = new Map(-74.0059,40.7120);
+    var container, camera, scene, renderer, car;
+    var offsetX, offsetZ;
+
+    var leftkey = false,
+        rightkey = false,
+        upkey = false,
+        downkey = false;
+
+    var visibleCar = false,
+        visibleBuilding = false,
+        visibleBound = false;
 
     function Map(longitude, latitude){        
         var BBOX_SIZE = 0.004;
         var THRESHOLD = 0.00004;
+        var me = this;
+        this.buildings = [];
+        this.bounds = [];
 
         var bbox = {
                 "north":latitude + BBOX_SIZE/2 , 
@@ -62,34 +74,74 @@
             }).done(function (data) {
                 objects = (osm2geo(data)).features;
                 console.log(objects);
+                me.draw();
             });
         }
 
+        this.draw = function(){
+            $.each(objects, function(index, value){
+                console.log(value);
+                if(value.properties.building == "yes"){
+                    console.log(index, value);
+                    //if(index>50) return false;
+                    var boundary = [];
+                    var geometry = new THREE.Geometry();
+                    $.each(value.geometry.coordinates[0], function(asd, vertex){
+                        if(!offsetX){
+                            offsetX = vertex[0];
+                            offsetZ = vertex[1];
+                        }
+                        geometry.vertices.push(new THREE.Vector3((vertex[0]-offsetX)*1000,0,(vertex[1]-offsetZ)*1000));
+                        boundary.push([(vertex[0]-offsetX)*1000, (vertex[1]-offsetZ)*1000]);
+
+                    //  console.log(new THREE.Vector3(vertex[0]-offsetX,0,vertex[1]-offsetZ));
+                    });
+                    var n = geometry.vertices.length;
+
+                    for (x = 0; x < n-2; x++) {
+                        geometry.faces.push(new THREE.Face3(0, x + 1, x + 2));
+                    }
+
+                    material = new THREE.MeshBasicMaterial({color:"#E6E1B5",wireframe:false});
+
+                    building = new THREE.Mesh(geometry, material);
+                    building.boundary = boundary;
+                    building.geometry.computeBoundingBox ();
+
+                    var bBox = building.geometry.boundingBox;
+
+                    scene.add(building);
+                    me.buildings.push(building);
+
+                    var geometry = new THREE.Geometry();
+                        geometry.vertices.push(new THREE.Vector3(bBox.min.x,0,bBox.min.z));
+                        geometry.vertices.push(new THREE.Vector3(bBox.min.x,0,bBox.max.z));
+                        geometry.vertices.push(new THREE.Vector3(bBox.max.x,0,bBox.max.z));
+                        geometry.vertices.push(new THREE.Vector3(bBox.max.x,0,bBox.min.z));
+
+                    for (x = 0; x < 2; x++) {
+                        geometry.faces.push(new THREE.Face3(0, x + 1, x + 2));
+                    }
+
+                    material = new THREE.MeshBasicMaterial({color:"#ff0000",wireframe:true});
+
+                    bound = new THREE.Mesh(geometry, material);
+                    bound.buildingID = building.id;
+                    me.bounds.push(bound);
+                    scene.add(bound);
+                    //console.log(bound);
+
+                }
+            });
+        }
         getOSM(bbox,false);
     };
 
-    var leftkey = false,
-        rightkey = false,
-        upkey = false,
-        downkey = false;
-
-    var visibleCar = false,
-        visibleBuilding = false,
-        visibleBound = false;
 
 
     $(document).ready(function(){
-        var container;
-        var camera;
-        var scene, renderer, objects;
-        var car, object;
 
         init();
-
-        var buildings = [];
-        var bounds = [];
-
-        var offsetX, offsetZ;
 
         function init() {
             container = document.createElement( 'div' );
@@ -112,7 +164,12 @@
             container.appendChild( renderer.domElement );
 
             window.addEventListener( 'resize', onWindowResize, false );
-          
+            
+            var initMap = new Map(-74.0059,40.7120);
+            maps.push(initMap);
+            currentMap = initMap;
+            //currentMap.draw(scene);
+            /*
             $("#data").load('map4.json', function(e){
                 var data = $.parseJSON(e);
                 $("#data").hide();
@@ -172,29 +229,31 @@
                 
 
                 console.log(buildings[0]);
-                var geometry = new THREE.Geometry();
-                    geometry.vertices.push(new THREE.Vector3(.2,0,.1));
-                    geometry.vertices.push(new THREE.Vector3(0,0,.1));
-                    geometry.vertices.push(new THREE.Vector3(0,0,0));
-                    geometry.vertices.push(new THREE.Vector3(.2,0,0));
                 
-                for (x = 0; x < 2; x++) {
-                    geometry.faces.push(new THREE.Face3(0, x + 1, x + 2));
-                }
-
-                material = new THREE.MeshBasicMaterial({color:"#0000cc",wireframe:true});
-                car = new THREE.Mesh( geometry, material);
-                car.position.z = 0.5;
-                car.direction = 0;
-                car.steering = 0;
-                car.speed = 0;
-                console.log(car);
-
-                scene.add( car );
-
-                animate();
             });
+            */
+
+            var geometry = new THREE.Geometry();
+                geometry.vertices.push(new THREE.Vector3(.2,0,.1));
+                geometry.vertices.push(new THREE.Vector3(0,0,.1));
+                geometry.vertices.push(new THREE.Vector3(0,0,0));
+                geometry.vertices.push(new THREE.Vector3(.2,0,0));
             
+            for (x = 0; x < 2; x++) {
+                geometry.faces.push(new THREE.Face3(0, x + 1, x + 2));
+            }
+
+            material = new THREE.MeshBasicMaterial({color:"#0000cc",wireframe:true});
+            car = new THREE.Mesh( geometry, material);
+            car.position.z = 0.5;
+            car.direction = 0;
+            car.steering = 0;
+            car.speed = 0;
+            console.log(car);
+
+            scene.add( car );
+
+            animate();
 
             $(document).keydown(function(e){
               if(e.keyCode == 65 || e.keyCode == 37){
@@ -288,12 +347,15 @@
 
             car.visible = visibleCar;
 
-            $.each(buildings, function(index, value){
+
+//            console.log(currentMap);
+
+            $.each(currentMap.buildings, function(index, value){
                 if(value.visible == visibleBuilding) return false;
                 value.visible = visibleBuilding;
             });
 
-            $.each(bounds, function(index, value){
+            $.each(currentMap.bounds, function(index, value){
                 if(value.visible == visibleBound) return false;
                 value.visible = visibleBound;
             });
