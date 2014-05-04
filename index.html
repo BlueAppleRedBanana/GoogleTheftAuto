@@ -28,7 +28,7 @@
 			container = document.createElement( 'div' );
 			document.body.appendChild( container );
 
-			camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
+			camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.5, 1000 );
 			scene = new THREE.Scene();
 
 			scene.add( new THREE.AmbientLight( 0xcccccc ) );
@@ -69,21 +69,33 @@
 							geometry.vertices.push(new THREE.Vector3((vertex[0]-offsetX)*1000,0,(vertex[1]-offsetZ)*1000));
 						//	console.log(new THREE.Vector3(vertex[0]-offsetX,0,vertex[1]-offsetZ));
 						});
-						var line = new THREE.Line( geometry, new THREE.LineBasicMaterial({color:0x000000}));
-						lines.push(line);
 
-						scene.add( line );
+						var n = geometry.vertices.length;
+
+						for (x = 0; x < n-2; x++) {
+					        geometry.faces.push(new THREE.Face3(0, x + 1, x + 2));
+					    }
+
+					    geometry.computeBoundingSphere();
+
+						material = new THREE.MeshBasicMaterial({color:"#ff0000",wireframe:true});
+
+						mesh = new THREE.Mesh(geometry, material);
+						scene.add(mesh);
+						lines.push(mesh);
 					}
 				});
 
+				console.log(lines[0]);
+
 				var geometry = new THREE.Geometry();
-					geometry.vertices.push(new THREE.Vector3(.1,0,.1));
+					geometry.vertices.push(new THREE.Vector3(.2,0,.1));
 					geometry.vertices.push(new THREE.Vector3(0,0,.1));
 					geometry.vertices.push(new THREE.Vector3(0,0,0));
-					geometry.vertices.push(new THREE.Vector3(.1,0,0));
-					geometry.vertices.push(new THREE.Vector3(.1,0,.1));
-				car = new THREE.Line( geometry, new THREE.LineBasicMaterial({color:0x000000}));
-				car.direction = 5.6240;
+					geometry.vertices.push(new THREE.Vector3(.2,0,0));
+					geometry.vertices.push(new THREE.Vector3(.2,0,.1));
+				car = new THREE.Line( geometry, new THREE.LineBasicMaterial({color:0x0000cc}));
+				car.direction = 0;
 				car.steering = 0;
 				car.speed = 0;
 				console.log(car);
@@ -144,23 +156,19 @@
 		}
 
 		function render() {
-			camera.position.x = 0;
-			camera.position.y = 10;
-			camera.position.z = 0;
-			camera.lookAt(lines[0].geometry.vertices[0]);
 
 
 		    if(leftkey){
-		      if(car.steering<1){ car.steering += 0.01; }
+		      if(car.steering<0.05){ car.steering += 0.002; }
 		    }else if(rightkey){
-		      if(car.steering>-1){  car.steering -= 0.01; }
+		      if(car.steering>-0.05){  car.steering -= 0.002; }
 		    }else{
 		      car.steering *= 0.1;
 		    }
 
-		    if(downkey){
+		    if(upkey){
 		      car.power = 1;
-		    }else if(upkey){
+		    }else if(downkey){
 		      car.power = -1;
 		    }else{
 		      car.power = 0;
@@ -176,19 +184,19 @@
 
 		    car.position.x += car.speed * -Math.cos(car.direction) * 0.001;
 		    car.position.z += car.speed * Math.sin(car.direction) * 0.001;
-			console.log(car.position.x,car.position.z)		    
-//		    loc.setLatitude(car.latitude);
-//		    loc.setLongitude(car.longitude);
-
-		//    console.log(car.latitude, car.longitude, car.direction);
-			/*
-		    var orientation = model.getOrientation();
-		    orientation.setHeading(360-car.direction/Math.PI*180%360);
-		    model.setOrientation(orientation);
-*/
+	        car.rotation.y = car.direction;
 
 
+			camera.position.x = car.position.x;
+			camera.position.y = 1+Math.pow(car.speed,2)/5000;
+			camera.position.z = car.position.z;
+			camera.lookAt(car.position);
 
+			var distance = Math.sqrt(Math.pow(car.position.x,2)+Math.pow(car.position.z,2));
+
+			if(distance>5){
+
+			}
 			renderer.render( scene, camera );
 
 		}
