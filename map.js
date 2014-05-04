@@ -53,6 +53,7 @@ function Map(longitude, latitude){
 
     me.draw = function(){
         $.each(objects, function(index, value){
+            console.log(value.properties);
             if(value.properties.building == "yes"){
                 var boundary = [];
                 var geometry = new THREE.Geometry();

@@ -11,7 +11,7 @@
 <script>
     var waitingAjax = false;
     var BBOX_SIZE = 0.001;
-    var THRESHOLD = 0.00002;
+    var THRESHOLD = 0.0004;
     var currentMap;
     var maps = [];
     var container, camera, scene, renderer, car;
@@ -21,7 +21,9 @@
     var leftkey = false,
         rightkey = false,
         upkey = false,
-        downkey = false;
+        downkey = false,
+        zoominkey = false,
+        zoomoutkey = false;
 
     var stop = false;
 
@@ -62,24 +64,31 @@
             eachMap.push(initMap);
 
             $(document).keydown(function(e){
-              if(e.keyCode == 65 || e.keyCode == 37){
-                leftkey = true;
-              }else if(e.keyCode == 68 || e.keyCode == 39){
-                rightkey = true;
-
-              }else if(e.keyCode == 87 || e.keyCode == 38){
-                upkey = true;
-                
-              }else if(e.keyCode == 83 || e.keyCode == 40){
-                downkey = true;        
-              }
-              return false;
+                if(e.keyCode == 82){
+                    zoominkey = true;
+                }else if(e.keyCode == 84){
+                    zoomoutkey = true;
+                }else if(e.keyCode == 65 || e.keyCode == 37){
+                    leftkey = true;
+                }else if(e.keyCode == 68 || e.keyCode == 39){
+                    rightkey = true;
+                }else if(e.keyCode == 87 || e.keyCode == 38){
+                    upkey = true;
+                }else if(e.keyCode == 83 || e.keyCode == 40){
+                    downkey = true;        
+                }
+                return false;
             });
 
 
 
             $(document).keyup(function(e){
-                if(e.keyCode == 32){
+                console.log(e.keyCode);
+                if(e.keyCode == 82){
+                    zoominkey = false;
+                }else if(e.keyCode == 84){
+                    zoomoutkey = false;
+                }else if(e.keyCode == 32){
                     stop = !stop;
                 }else if(e.keyCode == 49){
                     visibleCar = !visibleCar;
@@ -125,9 +134,9 @@
             if(!stop){
 
                 if(leftkey){
-                  if(car.steering<0.05){ car.steering += 0.002; }
+                  if(car.steering<0.05){ car.steering += 0.0004; }
                 }else if(rightkey){
-                  if(car.steering>-0.05){  car.steering -= 0.002; }
+                  if(car.steering>-0.05){  car.steering -= 0.0004; }
                 }else{
                   car.steering *= 0.1;
                 }
@@ -144,7 +153,7 @@
                   car.speed += car.power;
                 }
 
-                car.speed *=0.99;
+                car.speed *=0.992;
 
                 car.direction += car.steering;
 
@@ -153,7 +162,7 @@
 
                 car.rotation.y = car.direction;
                 camera.position.x = car.position.x;
-                camera.position.y = 0.002+Math.pow(car.speed,2)*5;
+                camera.position.y = 0.001+Math.pow(car.speed,2)*50;
                 camera.position.z = car.position.z;
                 camera.lookAt(car.position);
 
@@ -201,7 +210,7 @@
                         car.position.z < value1.bbox.west &&
                         car.position.z < value1.bbox.east ){
                         currentMap = value1;
-                        console.log("moved");
+//                        console.log("moved");
                     }
                     
                     
@@ -227,6 +236,12 @@
                     camera.position.x+=0.0001;
                 }else if(upkey){
                     camera.position.x-=0.0001;
+                }
+
+                if(zoominkey){
+                    camera.position.y+=0.0001;
+                }else if(zoomoutkey){
+                    camera.position.y-=0.0001;
                 }
                 var pos = camera.position.clone();
                 pos.y=0;
