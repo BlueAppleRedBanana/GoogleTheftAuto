@@ -2,6 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/* fixed by jin, 
+following the guide of 
+http://css.dzone.com/articles/render-geographic-information
+*/
+
+
+var transformSVGPathExposed;
 
 function d3threeD(exports) {
 
@@ -10,6 +17,9 @@ const DEGS_TO_RADS = Math.PI / 180,
 
 const DIGIT_0 = 48, DIGIT_9 = 57, COMMA = 44, SPACE = 32, PERIOD = 46,
       MINUS = 45;
+
+      transformSVGPathExposed = transformSVGPath;
+      
 function transformSVGPath(pathStr) {
   var path = new THREE.Shape();
 

@@ -1,5 +1,5 @@
 
-var home = [-122.412, 37.761012]
+var home = [40.412, -74.0]
 //var home = [-122.410312, 37.761012]
 //var TILE_URL = "http://tile.stamen.com/toner-labels/"
 var TILE_URL = "http://tile.stamen.com/toner/"

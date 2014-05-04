@@ -6,7 +6,7 @@
   <script type="text/javascript" src="lib/jquery-1.11.1.min.js"></script>
   <script type="text/javascript" src="car.js"></script>
   <script>
-    google.load('earth','1',{'other_params':"sensor={true}"});
+    google.load('earth','1',{'other_params':"sensor={false}"});
   </script>
   <style>
   div#speed{
@@ -49,9 +49,7 @@
   function setLocation(ge) {
     google.earth.addEventListener(ge, "frameend", handleFrame);
 
-
     car = new Car(40.7311, -73.9887, direction);
-
 
     var placemark = ge.createPlacemark('');
     placemark.setName('model');
@@ -61,8 +59,9 @@
     model.setLocation(loc);
     var link = ge.createLink('');
 
-    link.setHref('http://www.edwardrockhands.com/GoogleTheftAuto/models/'+
-      'splotchy_box.dae');
+    // link.setHref('http://www.edwardrockhands.com/GoogleTheftAuto/models/'+
+    //   'splotchy_box.dae');
+ link.setHref('c:/wamp/www/GoogleTheftAuto/models/collada/jeep/jeep1.dae');
 
     model.setLink(link);
     var scale = model.getScale();
@@ -112,56 +111,7 @@
     });
   }
 
-  function handleFrame(){
-    
-
-    if(leftkey){
-      if(car.steering<1){ car.steering += 0.01; }
-    }else if(rightkey){
-      if(car.steering>-1){  car.steering -= 0.01; }
-    }else{
-      car.steering *= 0.1;
-    }
-
-    if(downkey){
-      car.power = 1;
-    }else if(upkey){
-      car.power = -1;
-    }else{
-      car.power = 0;
-    }
-
-    if(car.speed + car.power < car.speedLimit){
-      car.speed += car.power;
-    }
-
-    car.speed *=0.99;
-
-    car.direction += car.steering;
-    car.latitude += car.speed * -Math.cos(car.direction) * 0.000001;
-    car.longitude += car.speed * Math.sin(car.direction) * 0.000001;
-    
-    loc.setLatitude(car.latitude);
-    loc.setLongitude(car.longitude);
-
-//    console.log(car.latitude, car.longitude, car.direction);
-
-    var orientation = model.getOrientation();
-    orientation.setHeading(360-car.direction/Math.PI*180%360);
-    model.setOrientation(orientation);
-
-    var ca = ge.createCamera('');
-
-    ca.setLatitude(car.latitude - 0.001*Math.cos(car.direction));
-    ca.setLongitude(car.longitude + 0.001*Math.sin(car.direction));
-    ca.setTilt(85);
-    ca.setAltitude(20);
-    ca.setHeading(360 - car.direction/Math.PI*180%360);
-
-    ge.getView().setAbstractView(ca);
-
-    $("#speed").html(parseInt(Math.abs(car.speed))+" MPH");
-  }
+  
 
   function failureCB(errorCode) {
 
@@ -172,6 +122,6 @@
 </head>
 <body>
   <div id="speed"></div>
-  <div id="map3d" style="max-height: 100%; width: 100%;"></div>
+  <div id="map3d" style="max-width:600px; max-height:350px;"></div>
 </body>
 </html>
