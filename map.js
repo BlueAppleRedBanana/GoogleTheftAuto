@@ -53,8 +53,7 @@ function Map(longitude, latitude){
 
     me.draw = function(){
         $.each(objects, function(index, value){
-            console.log(value.properties);
-            if(value.properties.building == "yes"){
+            if(value.properties.building == "yes" || value.properties.highway){
                 var boundary = [];
                 var geometry = new THREE.Geometry();
                 $.each(value.geometry.coordinates[0], function(asd, vertex){
