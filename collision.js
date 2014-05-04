@@ -1,32 +1,23 @@
 
-var stage;
-var quadStage;
-var circles;
-var tree;
+var minDistance = 0.0000001;
 
-var CIRCLE_COUNT = 100;
-var bounds;
-var shape;
-var fps;
-var showOverlay = false;
+detectCollision = function() {
+	buildings = currentMap.buildings;
+	//candidates = getNearOnly(car, minDistance, buildings);
+	// if (candidates.length > 0) {
 
-
-var pointQuad = true;
-var bounds = {
-    x: 0,
-    y: 0,
-    width: canvas.width,
-    height: canvas.height
+	// }
 }
 
-var quad = new QuadTree(bounds, pointQuad);
-
-var quadCanvas = document.getElementById("quadCanvas");
-
-
-
 function bound(obj1, obj2) {
-	if obj1.x < obj2.x + obj2.width && 
+	// bound1 = obj1.geometry.boundingbox;
+	// bound2 = obj2.geometry.boundingbox;
+	// bottom = bound1.min.x;
+	// top = bound1.max.x;
+	// left = bound1.
+
+	// bound1.max.x < 
+	if (obj1.x < obj2.x + obj2.width && 
 		obj1.x + obj1.width > obj2.x &&
 		obj1.y < obj2.y + obj2.height &&
 		obj1.y + obj1.height > oj2.y) {
@@ -35,13 +26,21 @@ function bound(obj1, obj2) {
 }
 
 function distance(obj1, obj2) {
-	return Math.pow(Math.abs(obj1.x-obj2.x),2) + Math.pow(Math.abs(obj1.y-obj2.y),2));
+	return (Math.pow(Math.abs(obj1.x-obj2.x),2) + Math.pow(Math.abs(obj1.y-obj2.y),2));
 }
 
-function getNearOnly(car, distance) {
-	result = new array();
-	for obj in allObjects {
-		if (distance(car, obj) > distance) {
+// function getCenter(bound) {
+// 	bound.
+// }
+
+// function simpleDistance(obj1, obj2) {
+// 	return max(Math.abs(obj1.))
+// }
+
+function getNearOnly(car, distance, objects) {
+	result = [];
+	for (obj in objects) {
+		if (distance(car, obj) < distance) {
 			result.append(obj);
 		}
 	}
@@ -49,8 +48,8 @@ function getNearOnly(car, distance) {
 }
 
 function testIntersection(car, object) {
-	for line1 in car.boundary {
-		for line2 in object.boundary {
+	for (line1 in car.boundary) {
+		for (line2 in object.boundary) {
 			if (lineIntersect(line1,line2)) {
 				return true;
 			}
@@ -61,20 +60,38 @@ function testIntersection(car, object) {
 
 
 
-function lineIntersect(line1, line2) {
-	x1 = line1.s.x;
-	y1 = line1.s.y;
-	x2 = line1.e.x;
-	y2 = line1.e.y;
-	x3 = line2.s.x;
-	y3 = line2.s.y;
-	x4 = line2.e.x;
-	y4 = line2.e.y;
+function checkIntersects(line1, line2) {
+	v1 = line1.s;
+	v2 = line1.e;
+	v3 = line2.s;
+	v4 = line2.e;
+	if (lineIntersect(v1.x,v1.y,v2.x,v2.y,v3.x,v3.y,v4.x,v4.y)) {
+		return true;
+	}
 
+	v3 = line2.e;
+	v4 = line2.s;
+	if (lineIntersect(v1.x,v1.y,v2.x,v2.y,v3.x,v3.y,v4.x,v4.y)) {
+		return true;
+	}
 
+	v1 = line1.e;
+	v2 = line1.s;
+	v3 = line2.s;
+	v4 = line2.e;
+	if (lineIntersect(v1.x,v1.y,v2.x,v2.y,v3.x,v3.y,v4.x,v4.y)) {
+		return true;
+	}
+
+	v3 = line2.e;
+	v4 = line2.s;
+	if (lineIntersect(v1.x,v1.y,v2.x,v2.y,v3.x,v3.y,v4.x,v4.y)) {
+		return true;
+	}
+	return false;
 }
 
-function 
+function lineIntersect(x1,y1,x2,y2,x3,y3,x4,y4) {
     var x=((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
     var y=((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4));
     if (isNaN(x)||isNaN(y)) {
@@ -212,4 +229,5 @@ function QuadTree(boundBox, lvl) {
 				}
 			}
 		}
+	}
 }

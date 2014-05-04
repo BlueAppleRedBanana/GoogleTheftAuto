@@ -34,6 +34,7 @@ Object.prototype.getKeyByValue = function( value ) {
 		}
 	}
 }
+
 // function getRangeFromZoomLvl(zoomlevel) {
 // 	return zoomRange[zoomLevel]
 // }
