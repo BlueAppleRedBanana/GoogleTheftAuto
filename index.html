@@ -9,16 +9,21 @@
 <script src="lib/osm2geo.js"></script>
 <script src="map.js"></script>
 <script>
-    var BBOX_SIZE = 0.005;
-    var THRESHOLD = 0.0001;
+    var waitingAjax = false;
+    var BBOX_SIZE = 0.001;
+    var THRESHOLD = 0.00002;
     var currentMap;
     var maps = [];
     var container, camera, scene, renderer, car;
     
+    var eachMap = [];
+
     var leftkey = false,
         rightkey = false,
         upkey = false,
         downkey = false;
+
+    var stop = false;
 
     var visibleCar = !false,
         visibleBuilding = !false,
@@ -51,8 +56,10 @@
             window.addEventListener( 'resize', onWindowResize, false );
             
             var initMap = new Map(-74.0059,40.7120);
-            maps.push(initMap);
+            maps[-74.0059]=[];
+            maps[-74.0059][40.7120] = initMap;
             currentMap = initMap;
+            eachMap.push(initMap);
 
             $(document).keydown(function(e){
               if(e.keyCode == 65 || e.keyCode == 37){
@@ -72,7 +79,9 @@
 
 
             $(document).keyup(function(e){
-                if(e.keyCode == 49){
+                if(e.keyCode == 32){
+                    stop = !stop;
+                }else if(e.keyCode == 49){
                     visibleCar = !visibleCar;
                 }else if(e.keyCode == 50){
                     visibleBuilding = !visibleBuilding;
@@ -113,68 +122,117 @@
         }
 
         function render() {
-            if(leftkey){
-              if(car.steering<0.05){ car.steering += 0.002; }
-            }else if(rightkey){
-              if(car.steering>-0.05){  car.steering -= 0.002; }
-            }else{
-              car.steering *= 0.1;
-            }
+            if(!stop){
 
-            if(upkey){
-              car.power = .0002;
-            }else if(downkey){
-              car.power = -.0002;
-            }else{
-              car.power = 0;
-            }
-
-            if(car.speed + car.power){
-              car.speed += car.power;
-            }
-
-            car.speed *=0.99;
-
-            car.direction += car.steering;
-
-            car.position.x += car.speed * -Math.cos(car.direction) * 0.001;
-            car.position.z += car.speed * Math.sin(car.direction) * 0.001;
-
-            car.rotation.y = car.direction;
-            camera.position.x = car.position.x;
-            camera.position.y = 0.002+Math.pow(car.speed,2)/5000;
-            camera.position.z = car.position.z;
-            camera.lookAt(car.position);
-
-//            console.log(car.position.x, currentMap.bbox.west+THRESHOLD);
-
-            if(car.position.x<currentMap.bbox.west+THRESHOLD){
-                var match = false;
-                $.each(maps, function(index, value){
-                    if(value.latitude == currentMap.latitude && value.longitude == currentMap.longitude+THRESHOLD){
-                        match = true;
-                    }
-                });
-                if(!match){
-                    var map = new Map(currentMap.longitude, currentMap.longitude+THRESHOLD);
-                    maps.push(map);
-                    currentMap = map;
+                if(leftkey){
+                  if(car.steering<0.05){ car.steering += 0.002; }
+                }else if(rightkey){
+                  if(car.steering>-0.05){  car.steering -= 0.002; }
+                }else{
+                  car.steering *= 0.1;
                 }
+
+                if(upkey){
+                  car.power = .00004;
+                }else if(downkey){
+                  car.power = -.00004;
+                }else{
+                  car.power = 0;
+                }
+
+                if(car.speed + car.power){
+                  car.speed += car.power;
+                }
+
+                car.speed *=0.99;
+
+                car.direction += car.steering;
+
+                car.position.x += car.speed * -Math.cos(car.direction) * 0.001;
+                car.position.z += car.speed * Math.sin(car.direction) * 0.001;
+
+                car.rotation.y = car.direction;
+                camera.position.x = car.position.x;
+                camera.position.y = 0.002+Math.pow(car.speed,2)*5;
+                camera.position.z = car.position.z;
+                camera.lookAt(car.position);
+
+
+                if(typeof maps[currentMap.longitude+BBOX_SIZE] == "undefined"){
+                        maps[currentMap.longitude+BBOX_SIZE]=[];
+                }
+
+                if(car.position.z > currentMap.bbox.west-THRESHOLD && typeof maps[currentMap.longitude+BBOX_SIZE][currentMap.latitude] == "undefined"){
+                    var map = new Map(currentMap.longitude+BBOX_SIZE, currentMap.latitude);
+                    maps[currentMap.longitude+BBOX_SIZE][currentMap.latitude] = map;
+                    eachMap.push(map);
+                }
+
+                if(typeof maps[currentMap.longitude-BBOX_SIZE] == "undefined"){
+                        maps[currentMap.longitude-BBOX_SIZE]=[];
+                }
+
+                if(car.position.z < currentMap.bbox.east+THRESHOLD && typeof maps[currentMap.longitude-BBOX_SIZE][currentMap.latitude] == "undefined"){
+                    var map = new Map(currentMap.longitude-BBOX_SIZE, currentMap.latitude);
+                    maps[currentMap.longitude-BBOX_SIZE][currentMap.latitude] = map;
+                    eachMap.push(map);
+                }
+
+                if(car.position.x < currentMap.bbox.north+THRESHOLD && typeof maps[currentMap.longitude][currentMap.latitude-BBOX_SIZE] == "undefined"){
+                    var map = new Map(currentMap.longitude, currentMap.latitude-BBOX_SIZE);
+                    maps[currentMap.longitude][currentMap.latitude-BBOX_SIZE] = map;
+                    eachMap.push(map);
+                }
+
+                if(car.position.x > currentMap.bbox.south-THRESHOLD && typeof maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] == "undefined"){
+                    var map = new Map(currentMap.longitude, currentMap.latitude+BBOX_SIZE);
+                    maps[currentMap.longitude][currentMap.latitude+BBOX_SIZE] = map;
+                    eachMap.push(map);
+                }
+
+                car.visible = visibleCar;
+
+
+
+                $.each(eachMap, function(index1, value1){
+                    if( currentMap != value1 &&
+                        car.position.x < value1.bbox.south &&
+                        car.position.x > value1.bbox.north &&
+                        car.position.z < value1.bbox.west &&
+                        car.position.z < value1.bbox.east ){
+                        currentMap = value1;
+                        console.log("moved");
+                    }
+                    
+                    
+                    $.each(value1.buildings, function(index, value){
+                        if(value.visible == visibleBuilding) return false;
+                        value.visible = visibleBuilding;
+                    });
+                    $.each(value1.bounds, function(index, value){
+                        if(value.visible == visibleBound) return false;
+                        value.visible = visibleBound;
+                    });
+                });
+
+
+                renderer.render( scene, camera );
+            }else{
+                if(leftkey){
+                    camera.position.z+=0.0001;
+                }else if(rightkey){
+                    camera.position.z-=0.0001;
+                }
+                if(downkey){
+                    camera.position.x+=0.0001;
+                }else if(upkey){
+                    camera.position.x-=0.0001;
+                }
+                var pos = camera.position.clone();
+                pos.y=0;
+                camera.lookAt(pos);
+                renderer.render( scene, camera );
             }
-
-            car.visible = visibleCar;
-
-            $.each(currentMap.buildings, function(index, value){
-                if(value.visible == visibleBuilding) return false;
-                value.visible = visibleBuilding;
-            });
-
-            $.each(currentMap.bounds, function(index, value){
-                if(value.visible == visibleBound) return false;
-                value.visible = visibleBound;
-            });
-
-            renderer.render( scene, camera );
         }
 </script>
 </head>
