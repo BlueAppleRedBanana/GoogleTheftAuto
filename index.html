@@ -43,8 +43,8 @@
 
 
     var waitingAjax = false;
-    var BBOX_SIZE = 0.001;
-    var THRESHOLD = 0.0004;
+    var BBOX_SIZE = 0.002;
+    var THRESHOLD = 0.0009;
     var currentMap;
     var maps = [];
     var container, camera, scene, renderer, car;
@@ -211,13 +211,17 @@
     function animate() {
         render();/*
         collisions = detectCollision();
+        if ( collisions.length > 0 ) { 
+        	car.speed = 0;
+        }
         var buildings = currentMap.buildings;
         $.each(buildings, function(index, object) {
             object.material.color.setHex(0xE6E1B5);
-        })
+        });
         $.each(collisions, function(index, object) {
             object.material.color.setHex(0xD6D1A5);
-        })*/
+        });
+        */
         requestAnimationFrame( animate );
     }
 
@@ -246,8 +250,9 @@
                 }                    
             }
 
-            if(value1.section)
+            if(value1.section){
                 value1.section.visible = visibleSectionBound;
+            }
 
             $.each(value1.buildings, function(index, value){
                 if(value.visible == visibleBuilding) return false;
@@ -261,17 +266,17 @@
 
         if(!stop){
             if(leftkey){
-              if(car.steering<0.05){ car.steering += 0.0004; }
+              if(car.steering<0.05){ car.steering += 0.004; }
             }else if(rightkey){
-              if(car.steering>-0.05){  car.steering -= 0.0004; }
+              if(car.steering>-0.05){  car.steering -= 0.004; }
             }else{
               car.steering *= 0.1;
             }
 
             if(upkey){
-              car.power = .00004;
+              car.power = .0004;
             }else if(downkey){
-              car.power = -.00004;
+              car.power = -.0004;
             }else{
               car.power = 0;
             }
@@ -279,7 +284,7 @@
             if(car.speed + car.power){
               car.speed += car.power;
             }
-
+            car.geometry.applyMatrix( new THREE.Matrix4().makeRotationZ(car.steering));
             car.direction += car.steering;
 
             car.position.x += car.speed * Math.cos(car.direction) * 0.001;
@@ -288,7 +293,7 @@
 
             car.rotation.z = car.direction;
             camera.position.x = car.position.x;
-            camera.position.z = 0.0003+Math.abs(car.speed)/5;
+            camera.position.z = 0.001+Math.abs(car.speed)/10;
             camera.position.y = car.position.y;
             camera.lookAt(car.position);
 
@@ -297,19 +302,22 @@
                 loc.setLatitude(car.position.y);
                 loc.setLongitude(car.position.x);
                 var orientation = model.getOrientation();
-                orientation.setHeading(car.direction/Math.PI*180%360);
+                orientation.setHeading(-car.direction/Math.PI*180%360);
                 model.setOrientation(orientation);                
             }
+            if(ge){
+                var ca = ge.createCamera('');
 
-            var ca = ge.createCamera('');
+                ca.setLongitude(car.position.x + 0*Math.cos(car.direction+Math.PI));
+                ca.setLatitude(car.position.y + 0*Math.sin(car.direction+Math.PI));
+                console.log(Math.cos(car.direction+Math.PI), Math.sin(car.direction+Math.PI));
+                console.log(car.direction/Math.PI*180%360);
+                ca.setTilt(90);
+                ca.setAltitude(5);
+                ca.setHeading(-car.direction/Math.PI*180%360+90);
 
-            ca.setLongitude(car.position.x - 0.001*Math.cos(car.direction));
-            ca.setLatitude(car.position.y - 0.001*Math.sin(car.direction));
-            ca.setTilt(85);
-            ca.setAltitude(20);
-            ca.setHeading(360-car.direction/Math.PI*180%360);
-
-            ge.getView().setAbstractView(ca);
+                ge.getView().setAbstractView(ca);                
+            }
 
 
             if(typeof maps[currentMap.longitude+BBOX_SIZE] == "undefined"){
