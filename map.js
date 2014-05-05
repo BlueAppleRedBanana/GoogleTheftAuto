@@ -1,16 +1,15 @@
 function Map(longitude, latitude){        
-    console.log(longitude, latitude);
     var me = this;
-    me.longitude = longitude;
-    me.latitude = latitude;
+    me.longitude = parseFloat(longitude);
+    me.latitude = parseFloat(latitude);
     me.buildings = [];
     me.bounds = [];
     me.section;
     me.bbox = {
-            "north":me.latitude + BBOX_SIZE/2, 
-            "south":me.latitude - BBOX_SIZE/2,
-            "east":me.longitude + BBOX_SIZE/2,
-            "west":me.longitude - BBOX_SIZE/2};
+            "north":parseFloat(me.latitude) + BBOX_SIZE/2, 
+            "south":parseFloat(me.latitude) - BBOX_SIZE/2,
+            "east":parseFloat(me.longitude) + BBOX_SIZE/2,
+            "west":parseFloat(me.longitude) - BBOX_SIZE/2};
 
     var objects = [];
     var BASE_URL = "http://api.openstreetmap.org/api/0.6/map?bbox="
@@ -130,6 +129,7 @@ function Map(longitude, latitude){
             var rectGeom = new THREE.ShapeGeometry( rectShape );
             car = new THREE.Mesh( rectGeom, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) ) ;     
             car.collision = false;
+            car.lookup = 0;
             var rectShape = new THREE.Shape();
             var BUMPERSIZE = 1.5;
             rectShape.moveTo(-0.00001*BUMPERSIZE,  0.00001*BUMPERSIZE );

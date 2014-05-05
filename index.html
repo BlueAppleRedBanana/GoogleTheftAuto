@@ -37,6 +37,12 @@
         right:0px;
         top:0px;
     }
+
+    #favorite{
+        position: absolute;
+        top:0px;
+        z-index:100;
+    }
 </style>
 <script>
     var ge;
@@ -44,6 +50,7 @@
     var loc;
     var model;
 
+    var lon, lat;
 
     var waitingAjax = false;
     var BBOX_SIZE = 0.002;
@@ -60,16 +67,32 @@
         downkey = false,
         zoominkey = false,
         zoomoutkey = false,
-        minimapTogglekey = false;
-
+        minimapTogglekey = false,
+        lookupkey = false,
+        lookdownkey = false;
     var stop = false;
 
     var visibleCar = !false,
-        visibleBuilding = !false,
-        visibleBound = !false,
-        visibleSectionBound = !false;
+        visibleBuilding = false,
+        visibleBound = false,
+        visibleSectionBound = false;
+
+    function getURLParameter(url) {
+    	var geo = [];
+        $.each(url.split("?")[1].split("&"), function(index, value){
+        	geo.push(value.split("=")[1]);
+        });
+        return geo;
+
+    }
 
     $(document).ready(function(){
+        
+    	var geo = [];
+        geo = getURLParameter(window.location.search);
+
+        lon = parseFloat(geo[0]);
+        lat = parseFloat(geo[1]);
 
         init();
 
@@ -79,7 +102,7 @@
             container = document.createElement( 'div' );
             document.body.appendChild( container );
             $(container).addClass("container");
-            camera = new THREE.PerspectiveCamera( 50, 1, 0.000001, 0.003 );
+            camera = new THREE.PerspectiveCamera( 50, 1, 0.000001, 0.03 );
             scene = new THREE.Scene();
 
             scene.add( new THREE.AmbientLight( 0xcccccc ) );
@@ -96,9 +119,12 @@
             renderer.setClearColorHex( 0xffffff, 1 );
             container.appendChild( renderer.domElement );
             
-            var initMap = new Map(-74.0059,40.7120);
-            maps[-74.0059]=[];
-            maps[-74.0059][40.7120] = initMap;
+//            var initMap = new Map(-74.0059,40.7120);
+            var initMap = new Map(lon,lat);
+//            maps[-74.0059]=[];
+//            maps[-74.0059][40.7120] = initMap;
+            maps[lon]=[];
+            maps[lon][lat] = initMap;
             currentMap = initMap;
             eachMap.push(initMap);
 
@@ -115,12 +141,23 @@
                     upkey = true;
                 }else if(e.keyCode == 83 || e.keyCode == 40){
                     downkey = true;        
+                }else if(e.keyCode == 70){
+                    lookupkey = true;        
+                }else if(e.keyCode == 71){
+                    lookdownkey = true;        
                 }
+
                 return false;
             });
 
             $(document).keyup(function(e){
-                if(e.keyCode == 77){
+                console.log(e.keyCode);
+                if(e.keyCode == 81){
+                    car.position.x = lon;
+                    car.position.y = lat;
+                    car.direction = 0;
+                    car.speed = 0;
+                }else if(e.keyCode == 77){
                     minimapTogglekey = !minimapTogglekey;
                     if(minimapTogglekey){
                         $(".container canvas").addClass("minimap");
@@ -153,6 +190,10 @@
                     upkey = false;
                 }else if(e.keyCode == 83 || e.keyCode == 40){
                     downkey = false;        
+                }else if(e.keyCode == 70){
+                    lookupkey = false;
+                }else if(e.keyCode == 71){
+                    lookdownkey = false;
                 }
                 return false;
             });
@@ -198,8 +239,10 @@
             scale.setZ(n);
             var la = ge.getView().copyAsLookAt(ge.ALTITUDE_RELATIVE_TO_GROUND);
             
-            loc.setLatitude(40.7120);
-            loc.setLongitude(-74.0059);
+            //loc.setLatitude(40.7120);
+            //loc.setLongitude(-74.0059);
+			loc.setLatitude(parseFloat(lat));
+            loc.setLongitude(parseFloat(lon));
 
             placemark.setGeometry(model);
             ge.getView().setAbstractView(la);
@@ -276,12 +319,19 @@
             }
 
             if(upkey){
-              car.power = .0004;
+              car.power = .0005;
             }else if(downkey){
-              car.power = -.0004;
+              car.power = -.0005;
             }else{
               car.power = 0;
             }
+
+            if(lookupkey){
+                car.lookup ++;
+            }else if(lookdownkey){
+                car.lookup --;
+            }
+//            car.lookup *= 0.9;
 
             if(car.speed + car.power){
               car.speed += car.power;
@@ -292,11 +342,11 @@
 
             car.position.x += car.speed * Math.cos(car.direction) * 0.001;
             car.position.y += car.speed * Math.sin(car.direction) * 0.001;
-            car.speed *=0.99;
+            car.speed *=0.95;
 
             car.rotation.z = car.direction;
             camera.position.x = car.position.x;
-            camera.position.z = 0.001+Math.abs(car.speed)/10;
+            camera.position.z = 0.001+Math.abs(car.speed)/3;
             camera.position.y = car.position.y;
             camera.lookAt(car.position);
 
@@ -306,14 +356,15 @@
                 loc.setLongitude(car.position.x);
                 var orientation = model.getOrientation();
                 orientation.setHeading(-car.direction/Math.PI*180%360);
-                model.setOrientation(orientation);                
+                model.setOrientation(orientation); 
+                model.getScale().set(0.1,.05,.05);
             }
             if(ge){
                 var ca = ge.createCamera('');
 
                 ca.setLongitude(car.position.x + 0.0002*Math.cos(car.direction+Math.PI));
                 ca.setLatitude(car.position.y + 0.0002*Math.sin(car.direction+Math.PI));
-                ca.setTilt(80+0.001+Math.abs(car.speed)*200);
+                ca.setTilt(80+0.001+Math.abs(car.speed)*200-car.lookup);
                 ca.setAltitude(5);
                 ca.setHeading(-car.direction/Math.PI*180%360+90);
 
@@ -353,6 +404,8 @@
 
             var dir = new THREE.Vector3(Math.cos(car.direction),Math.sin(car.direction),0);
 
+            //console.log(car.position);
+
             $.each(currentMap.buildings, function(index, value){
                 var flag = false;
                 if(
@@ -379,10 +432,39 @@
                                 var a = (p1.y-p2.y)/(p1.x-p2.x);
                                 var p=p1.y - a*p1.x;
                                 var c = Math.abs(a*x - y + p) / Math.sqrt(a*a + 1);
-                                if(c<0.00002){
+                                if(c<0.00001){
                                     flag = true;
                                     car.collision=true;
+                                    var b = Math.atan(a);
+                                    if(b<0){
+                                        console.log("Asd");
+                                    }
+
+                                    car.direction = car.direction%(Math.PI*2);
                                     car.direction = car.direction - Math.atan(a);
+/*
+                                    if(b < -Math.PI/2){
+
+                                    }else if(b < 0){
+
+                                    }else if(b < Math.PI/2){
+                                    
+                                    }else if(b < Math.PI){
+                                    
+                                    }*/
+                                    /*
+                                    if(Math.abs(car.direction-b)<Math.PI/2){
+                                        car.direction = - b;
+                                    }else{
+                                        car.direction += 2*b;
+                                    }
+                                    */
+                                    /*
+                                    if(Math.abs(car.direction - Math.atan(a))<Math.PI/2){
+                                        car.direction = car.direction - Math.atan(a);
+                                    }else{
+                                        car.direction = car.direction - Math.atan(a)-Math.PI;
+                                    }*/
                                 }
                             }
                         });
@@ -432,5 +514,11 @@
 </head>
 <body>
 <div id="map3d"></div>
+<div id="favorite">
+    <a href="http://edwardrockhands.com/GoogleTheftAuto/index.html?url=-74.00702591092902&lat=40.71176495102903">New York</a>
+    <a href="http://edwardrockhands.com/GoogleTheftAuto/index.html?url=-122.388387&lat=37.788429">San Francisco</a>
+    <a href="http://edwardrockhands.com/GoogleTheftAuto/index.html?url=2.292885&lat=48.858263">Paris</a>
+    <a href="http://edwardrockhands.com/GoogleTheftAuto/index.html?url=-73.98721&lat=40.694007">NYU</a>
+</div>
 </body>
 </html>
